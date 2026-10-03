@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://simtrouble.local/schemas/learner-session.schema.json",
+  "title": "Learner Session",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "session_id",
+    "case_id",
+    "user_id",
+    "current_stage",
+    "evidence_seen",
+    "current_hypothesis",
+    "hypothesis_history",
+    "actions",
+    "hint_count",
+    "wrong_branch_count",
+    "skill_scores",
+    "trace"
+  ],
+  "properties": {
+    "session_id": {"type": "string", "minLength": 1},
+    "case_id": {"type": "string", "pattern": "^ST-[0-9]{3}$"},
+    "user_id": {"type": "string", "minLength": 1},
+    "current_stage": {"$ref": "#/$defs/stage"},
+    "evidence_seen": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "current_hypothesis": {
+      "type": ["string", "null"]
+    },
+    "hypothesis_history": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "actions": {
+      "type": "array",
+      "items": {"$ref": "action.schema.json"}
+    },
+    "hint_count": {"type": "integer", "minimum": 0},
+    "wrong_branch_count": {"type": "integer", "minimum": 0},
+    "skill_scores": {
+      "$ref": "skill.schema.json"
+    },
+    "trace": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/traceEvent"}
+    }
+  },
+  "$defs": {
+    "stage": {
+      "enum": [
+        "START",
+        "OBSERVE",
+        "INVESTIGATE",
+        "HYPOTHESIZE",
+        "TEST",
+        "UPDATE",
+        "DIAGNOSE",
+        "REFLECT",
+        "FINISH"
+      ]
+    },
+    "traceEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "timestamp",
+        "stage",
+        "action_type",
+        "evidence_id",
+        "current_hypothesis",
+        "tutor_hint",
+        "result"
+      ],
+      "properties": {
+        "timestamp": {"type": "string", "format": "date-time"},
+        "stage": {"$ref": "#/$defs/stage"},
+        "action_type": {"type": "string", "minLength": 1},
+        "evidence_id": {"type": ["string", "null"]},
+        "current_hypothesis": {"type": ["string", "null"]},
+        "tutor_hint": {"type": ["string", "null"]},
+        "result": {}
+      }
+    }
+  }
+}

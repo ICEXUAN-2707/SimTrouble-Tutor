@@ -1,0 +1,78 @@
+{
+  "case_id": "ST-001",
+  "device_type": "industrial_robot",
+  "scenario": "flexible_handling",
+  "difficulty": 1,
+  "task": {
+    "type": "pick_and_place"
+  },
+  "fault": {
+    "type": "object_pose_offset",
+    "parameters": {
+      "axis": "x",
+      "offset_mm": 70
+    }
+  },
+  "initial_state": {
+    "robot_motion_completed": true,
+    "gripper_command_executed": true,
+    "collision_detected": false,
+    "grasp_succeeded": false
+  },
+  "initial_observation": [
+    "robot_motion_completed",
+    "gripper_command_executed",
+    "no_collision",
+    "grasp_failed"
+  ],
+  "evidence": [
+    {
+      "id": "E01",
+      "type": "gripper_state",
+      "content": {
+        "command": "close",
+        "state": "closed",
+        "holding_object": false
+      },
+      "information_value": 5,
+      "related_faults": ["grasp_failure", "object_pose_offset"]
+    },
+    {
+      "id": "E02",
+      "type": "object_pose",
+      "content": {
+        "axis": "x",
+        "expected_mm": 0,
+        "actual_mm": 70,
+        "offset_mm": 70
+      },
+      "information_value": 10,
+      "related_faults": ["object_pose_offset"]
+    },
+    {
+      "id": "E03",
+      "type": "target_pose",
+      "content": {
+        "target_available": true,
+        "target_conflict": false
+      },
+      "information_value": 5,
+      "related_faults": ["placement_target_conflict"]
+    }
+  ],
+  "ground_truth": {
+    "diagnosis": "object_pose_mismatch"
+  },
+  "optimal_path": [
+    "check_gripper",
+    "check_object_pose",
+    "check_target_pose",
+    "compare_poses",
+    "diagnose_object_pose_mismatch"
+  ],
+  "safety_rules": [],
+  "scoring_rules": {
+    "version": "1.0",
+    "rules": []
+  }
+}

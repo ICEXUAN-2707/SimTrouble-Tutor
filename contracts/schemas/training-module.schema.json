@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://simtrouble.local/schemas/training-module.schema.json",
+  "title": "Training Module",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["module_id", "module_type", "title", "device_id", "content_sections", "case_ids"],
+  "properties": {
+    "module_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "module_type": {
+      "enum": ["basic_operation", "exception_handling"]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "device_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "content_sections": {
+      "type": "array",
+      "x-uniqueBy": "section_id",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["section_id", "title", "body"],
+        "properties": {
+          "section_id": {"type": "string", "minLength": 1},
+          "title": {"type": "string", "minLength": 1},
+          "body": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "case_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^ST-[0-9]{3}$"
+      }
+    }
+  },
+  "examples": [
+    {
+      "module_id": "MOD-EXCEPTION",
+      "module_type": "exception_handling",
+      "title": "异常处置训练",
+      "device_id": "DEV-IR-FH-001",
+      "content_sections": [
+        {
+          "section_id": "diagnostic-reasoning",
+          "title": "诊断推理",
+          "body": "根据 Evidence 提出 Hypothesis，通过检查更新判断并提交 Diagnosis。"
+        }
+      ],
+      "case_ids": ["ST-001"]
+    }
+  ]
+}

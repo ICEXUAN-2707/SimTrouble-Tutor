@@ -1,0 +1,19 @@
+{
+  "module_id": "MOD-BASIC",
+  "module_type": "basic_operation",
+  "title": "基础操作训练",
+  "device_id": "DEV-IR-FH-001",
+  "content_sections": [
+    {
+      "section_id": "workstation-introduction",
+      "title": "工作站认知",
+      "body": "认识机器人、夹爪、工件、目标区域和障碍物。"
+    },
+    {
+      "section_id": "sop-and-safety",
+      "title": "SOP 与安全基础",
+      "body": "理解柔性搬运任务的基本操作顺序和安全边界。"
+    }
+  ],
+  "case_ids": []
+}

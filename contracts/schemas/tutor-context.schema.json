@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://simtrouble.local/schemas/tutor-context.schema.json",
+  "title": "Tutor Input Context",
+  "description": "Only this public projection may be sent to Tutor. Hidden Case fields are structurally absent.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "training_module",
+    "case_public_state",
+    "evidence_seen",
+    "learner_action_history",
+    "current_hypothesis",
+    "current_skill_profile",
+    "allowed_tutor_actions"
+  ],
+  "properties": {
+    "training_module": {"$ref": "training-module.schema.json"},
+    "case_public_state": {"$ref": "case-public.schema.json"},
+    "evidence_seen": {
+      "type": "array",
+      "items": {"$ref": "evidence-public.schema.json"}
+    },
+    "learner_action_history": {
+      "type": "array",
+      "items": {"$ref": "action.schema.json"}
+    },
+    "current_hypothesis": {"type": ["string", "null"]},
+    "current_skill_profile": {"$ref": "skill.schema.json"},
+    "allowed_tutor_actions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"enum": ["question", "hint", "explain", "reflect"]}
+    }
+  }
+}

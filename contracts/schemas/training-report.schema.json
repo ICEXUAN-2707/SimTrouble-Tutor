@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://simtrouble.local/schemas/training-report.schema.json",
+  "title": "Training Report",
+  "description": "Available only after the Session reaches FINISH.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "session_id",
+    "case_id",
+    "ground_truth",
+    "learner_path",
+    "recommended_path",
+    "skill_scores",
+    "tutor_reflection",
+    "next_case_id"
+  ],
+  "properties": {
+    "session_id": {"type": "string", "minLength": 1},
+    "case_id": {"type": "string", "pattern": "^ST-[0-9]{3}$"},
+    "ground_truth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["diagnosis"],
+      "properties": {
+        "diagnosis": {"type": "string", "minLength": 1}
+      }
+    },
+    "learner_path": {
+      "type": "array",
+      "items": {"$ref": "learner-session.schema.json#/$defs/traceEvent"}
+    },
+    "recommended_path": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "skill_scores": {"$ref": "skill.schema.json"},
+    "tutor_reflection": {"type": ["string", "null"]},
+    "next_case_id": {
+      "type": ["string", "null"],
+      "pattern": "^ST-[0-9]{3}$"
+    }
+  }
+}

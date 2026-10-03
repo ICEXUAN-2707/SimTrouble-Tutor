@@ -1,0 +1,23 @@
+{
+  "project": "SimTrouble Tutor",
+  "package": "Freeze Pack",
+  "version": "v0.2",
+  "branch_flow": "feature/* -> develop -> integration/v0.x -> release/v0.x -> main -> tag",
+  "roles": {
+    "A": "Tech Lead / Architecture & Core",
+    "B": "Application / AI / Simulation Engineer",
+    "C": "Product / QA / Pitch Lead"
+  },
+  "documents": [
+    "00_README.md",
+    "01_TECH_ARCHITECTURE.md",
+    "02_CONTRACTS.md",
+    "03_GIT_BRANCH_POLICY.md",
+    "04_TEAM_RACI.md",
+    "05_DEVELOPMENT_ROADMAP.md",
+    "06_REVIEW_AND_RELEASE_GATE.md",
+    "07_CODEX_RULES.md",
+    "08_CODEOWNERS_TEMPLATE",
+    "09_FREEZE_CHECKLIST.md"
+  ]
+}

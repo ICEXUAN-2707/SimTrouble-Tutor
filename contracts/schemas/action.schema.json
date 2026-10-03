@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://simtrouble.local/schemas/action.schema.json",
+  "title": "Learner Action",
+  "description": "Platform-neutral action envelope. Allowed action names and parameter details are Case/phase-specific and are not invented in Phase 1.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["action_type", "parameters"],
+  "properties": {
+    "action_type": {"type": "string", "minLength": 1},
+    "parameters": {"type": "object"}
+  }
+}

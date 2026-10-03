@@ -1,0 +1,14 @@
+{
+  "module_id": "MOD-EXCEPTION",
+  "module_type": "exception_handling",
+  "title": "异常处置训练",
+  "device_id": "DEV-IR-FH-001",
+  "content_sections": [
+    {
+      "section_id": "diagnostic-reasoning",
+      "title": "诊断推理",
+      "body": "根据 Evidence 提出 Hypothesis，通过检查更新判断并提交 Diagnosis。"
+    }
+  ],
+  "case_ids": ["ST-001"]
+}

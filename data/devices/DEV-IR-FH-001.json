@@ -1,0 +1,7 @@
+{
+  "device_id": "DEV-IR-FH-001",
+  "device_type": "industrial_robot",
+  "scenario": "flexible_handling",
+  "display_name": "工业机器人柔性搬运工作站",
+  "components": ["robot_arm", "gripper", "workpiece", "target_area", "obstacle"]
+}

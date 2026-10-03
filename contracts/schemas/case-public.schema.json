@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://simtrouble.local/schemas/case-public.schema.json",
+  "title": "Learner-facing Case Public State",
+  "description": "A projection of Case that excludes fault, evidence content, internal evidence metadata, initial hidden state, ground_truth, optimal_path and scoring_rules.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "case_id",
+    "device_type",
+    "scenario",
+    "difficulty",
+    "task",
+    "initial_observation",
+    "evidence_options",
+    "safety_rules"
+  ],
+  "properties": {
+    "case_id": {"type": "string", "pattern": "^ST-[0-9]{3}$"},
+    "device_type": {"const": "industrial_robot"},
+    "scenario": {"const": "flexible_handling"},
+    "difficulty": {"type": "integer", "minimum": 1},
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {"type": {"const": "pick_and_place"}}
+    },
+    "initial_observation": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "evidence_options": {
+      "type": "array",
+      "uniqueItems": true,
+      "x-uniqueBy": "id",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "type"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "type": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "safety_rules": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    }
+  }
+}

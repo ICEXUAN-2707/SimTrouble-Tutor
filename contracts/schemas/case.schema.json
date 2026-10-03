@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://simtrouble.local/schemas/case.schema.json",
+  "title": "Training Case — Server-side Authoritative Form",
+  "description": "Contains hidden fields and must never be returned directly by learner-facing APIs or passed directly to Tutor.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "case_id",
+    "device_type",
+    "scenario",
+    "difficulty",
+    "task",
+    "fault",
+    "initial_state",
+    "initial_observation",
+    "evidence",
+    "ground_truth",
+    "optimal_path",
+    "safety_rules",
+    "scoring_rules"
+  ],
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "pattern": "^ST-[0-9]{3}$"
+    },
+    "device_type": {
+      "const": "industrial_robot"
+    },
+    "scenario": {
+      "const": "flexible_handling"
+    },
+    "difficulty": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {"const": "pick_and_place"}
+      }
+    },
+    "fault": {"$ref": "#/$defs/fault"},
+    "initial_state": {
+      "type": "object"
+    },
+    "initial_observation": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "evidence": {
+      "type": "array",
+      "uniqueItems": true,
+      "x-uniqueBy": "id",
+      "items": {"$ref": "#/$defs/evidence"}
+    },
+    "ground_truth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["diagnosis"],
+      "properties": {
+        "diagnosis": {"type": "string", "minLength": 1}
+      }
+    },
+    "optimal_path": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "safety_rules": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "scoring_rules": {"$ref": "#/$defs/scoringRules"}
+  },
+  "$defs": {
+    "faultType": {
+      "enum": [
+        "object_pose_offset",
+        "grasp_failure",
+        "obstacle_collision_risk",
+        "placement_target_conflict"
+      ]
+    },
+    "fault": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "parameters"],
+      "properties": {
+        "type": {"$ref": "#/$defs/faultType"},
+        "parameters": {"type": "object"}
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "content", "information_value", "related_faults"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "type": {"type": "string", "minLength": 1},
+        "content": {"type": "object"},
+        "information_value": {"type": "number"},
+        "related_faults": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/faultType"}
+        }
+      }
+    },
+    "skillDimension": {
+      "enum": ["hypothesis", "evidence", "efficiency", "updating", "safety"]
+    },
+    "scoringRules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "rules"],
+      "properties": {
+        "version": {"type": "string", "minLength": 1},
+        "rules": {
+          "type": "array",
+          "uniqueItems": true,
+          "x-uniqueBy": "rule_id",
+          "items": {"$ref": "#/$defs/scoringRule"}
+        }
+      }
+    },
+    "scoringRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rule_id",
+        "dimension",
+        "event_type",
+        "condition",
+        "score_delta",
+        "explanation"
+      ],
+      "properties": {
+        "rule_id": {"type": "string", "minLength": 1},
+        "dimension": {"$ref": "#/$defs/skillDimension"},
+        "event_type": {"type": "string", "minLength": 1},
+        "condition": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["field", "operator", "value"],
+          "properties": {
+            "field": {"type": "string", "minLength": 1},
+            "operator": {
+              "enum": ["equals", "not_equals", "contains", "in", "exists", "gt", "gte", "lt", "lte"]
+            },
+            "value": {}
+          }
+        },
+        "score_delta": {"type": "number"},
+        "explanation": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

@@ -1,0 +1,29 @@
+name: Contracts and Training Core
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop, "integration/**", "release/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Run contract and core tests
+        run: python -B -m unittest discover -s tests -p "test_*.py" -v

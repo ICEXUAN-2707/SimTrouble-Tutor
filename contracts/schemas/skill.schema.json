@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://simtrouble.local/schemas/skill.schema.json",
+  "title": "Five-dimensional Skill Scores",
+  "description": "Phase 1 freezes only the five dimensions and score container; scoring rules belong to Phase 4.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["hypothesis", "evidence", "efficiency", "updating", "safety"],
+  "properties": {
+    "hypothesis": {"type": "number", "minimum": 0, "maximum": 100},
+    "evidence": {"type": "number", "minimum": 0, "maximum": 100},
+    "efficiency": {"type": "number", "minimum": 0, "maximum": 100},
+    "updating": {"type": "number", "minimum": 0, "maximum": 100},
+    "safety": {"type": "number", "minimum": 0, "maximum": 100}
+  },
+  "examples": [
+    {
+      "hypothesis": 0,
+      "evidence": 0,
+      "efficiency": 0,
+      "updating": 0,
+      "safety": 0
+    }
+  ]
+}

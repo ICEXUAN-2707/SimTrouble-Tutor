@@ -1,0 +1,17 @@
+# CODEOWNERS template
+
+/core/                  @TECH_LEAD
+/contracts/             @TECH_LEAD
+/specs/                 @TECH_LEAD
+/backend/api/           @TECH_LEAD
+/backend/cases/         @TECH_LEAD
+/backend/sessions/      @TECH_LEAD
+/backend/scoring/       @TECH_LEAD
+
+/frontend/              @APP_AI_ENGINEER
+/backend/tutor/         @APP_AI_ENGINEER
+/knowledge/             @APP_AI_ENGINEER
+/simulation/            @APP_AI_ENGINEER
+
+/pitch/                 @PRODUCT_PITCH_LEAD
+/docs/product/          @PRODUCT_PITCH_LEAD

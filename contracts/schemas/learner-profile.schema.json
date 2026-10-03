@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://simtrouble.local/schemas/learner-profile.schema.json",
+  "title": "Learner Profile and Progress",
+  "description": "Cross-session read model for Dashboard and ProgressManager.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["user_id", "module_progress", "skill_scores", "recommended_case_id"],
+  "properties": {
+    "user_id": {"type": "string", "minLength": 1},
+    "module_progress": {
+      "type": "array",
+      "uniqueItems": true,
+      "x-uniqueBy": "module_id",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["module_id", "completed_case_ids", "total_case_count"],
+        "properties": {
+          "module_id": {"type": "string", "minLength": 1},
+          "completed_case_ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"type": "string", "pattern": "^ST-[0-9]{3}$"}
+          },
+          "total_case_count": {"type": "integer", "minimum": 0}
+        }
+      }
+    },
+    "skill_scores": {"$ref": "skill.schema.json"},
+    "recommended_case_id": {
+      "type": ["string", "null"],
+      "pattern": "^ST-[0-9]{3}$"
+    }
+  }
+}
