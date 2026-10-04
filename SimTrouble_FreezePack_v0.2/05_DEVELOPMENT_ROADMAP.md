@@ -1,7 +1,7 @@
 # 开发阶段地图 v0.2
 
 ## Phase 0 — 外部项目尽调
-当前正在进行。
+状态：已完成。
 
 输出：
 - reuse-analysis.md
@@ -9,6 +9,8 @@
 - architecture-decisions.md
 
 ## Phase 1 — Contract Freeze
+
+状态：已完成。
 
 冻结：
 - Device Schema
@@ -24,6 +26,8 @@
 - ST-001.json
 
 ## Phase 2 — Training Core
+状态：已完成并通过回归测试。
+
 实现：
 - TrainingModuleLoader
 - CaseLoader
@@ -37,6 +41,8 @@
 - 复杂 UI
 
 ## Phase 3 — Diagnostic State Machine + Trace
+状态：规格规划中；实现受 Phase 3 Decision Gates 阻塞。
+
 实现：
 ```text
 OBSERVE

@@ -1,6 +1,6 @@
 # Phase 2 Goal — Training Core
 
-> Status: APPROVED FOR IMPLEMENTATION after CCP-001/CCP-002 acceptance.
+> Status: COMPLETED — implemented and regression-tested after CCP-001/CCP-002 acceptance.
 
 ## Goal
 

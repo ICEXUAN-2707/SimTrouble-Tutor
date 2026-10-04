@@ -10,7 +10,7 @@
 
 ## Gate status
 
-Ready for implementation planning:
+Completed:
 
 - module loading;
 - Case loading;
