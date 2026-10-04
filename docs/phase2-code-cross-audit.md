@@ -1,0 +1,136 @@
+# Phase 2 Code Cross-Audit for Phase 3 Readiness
+
+> Audit date: 2026-10-05  
+> Audited baseline: `4f10c6c`  
+> Scope: existing contracts, Pydantic models, Training Core, data fixtures and tests  
+> Result: **FUNCTIONAL BASELINE PASSES; PHASE 3 IMPLEMENTATION IS NOT YET UNBLOCKED**
+
+## 1. Audit method
+
+The audit traced:
+
+```text
+Freeze Pack / approved CCPs
+→ JSON Schema and interface contracts
+→ Pydantic runtime models
+→ Phase 2 domain services
+→ ST-001 and module/device data
+→ unit/contract tests
+→ Phase 3 authority and Trace requirements
+```
+
+Checks executed:
+
+- all 29 repository tests: passed;
+- `python -m pip check`: no broken requirements;
+- branch and working tree: clean before audit;
+- runtime mutation probes: executed in memory only, with no file or repository changes;
+- forbidden framework import audit: passed through the existing regression suite.
+
+## 2. Confirmed correct behavior
+
+- Case, Module and Device data load through strict Pydantic models.
+- Duplicate Case/Module/Evidence identifiers and missing Case references are rejected.
+- A new Session starts at `START` with frozen defaults.
+- Public Case projection excludes fault, Ground Truth, Optimal Path, scoring rules and Evidence internals.
+- Evidence release returns only `id`, `type` and `content`.
+- Unknown Evidence does not mutate the Session.
+- Repeated Evidence requests do not duplicate `evidence_seen`.
+- Learner Action and Hypothesis inputs are defensively copied/normalized.
+- Progress calculation counts only `FINISH` Sessions for the selected learner.
+- Core does not import FastAPI, SQLAlchemy, LangGraph, LLM, Isaac, ROS or Gazebo packages.
+
+## 3. Findings
+
+### CA-01 — BLOCKER: Session authority can be bypassed
+
+Evidence:
+
+- `CaseSession.session` exposes the mutable `LearnerSession` object directly.
+- Pydantic assignment validation is not enabled.
+- A caller can assign `current_stage = 'NOT_A_STAGE'`, set negative counters, or append an empty Evidence ID after construction.
+- Existing tests directly assign `FINISH` and `OBSERVE` to Session objects when building Progress fixtures.
+
+Impact:
+
+This violates the frozen rule that Core State Machine is the only authority allowed to change Session stage. Phase 3 cannot be considered correct while callers can bypass it.
+
+Required closure:
+
+- keep one internal mutable Session state;
+- expose only a defensive snapshot/read view outside the Session aggregate;
+- route stage mutation through the Diagnostic State Machine boundary;
+- add negative tests proving external mutation cannot change authoritative state.
+
+This is an internal integrity correction. It does not require a JSON Schema or API change.
+
+### CA-02 — BLOCKER: Trace is not append-only
+
+Evidence:
+
+- `LearnerSession.trace` is a public mutable list.
+- `TraceEvent` is mutable.
+- Existing events, event order and nested `result` data can be rewritten after append.
+
+Impact:
+
+The current model shape validates initial construction but cannot enforce the frozen append-only audit requirement.
+
+Required closure:
+
+- Trace writes must pass through a single Core recorder/aggregate boundary;
+- appended events must be defensively copied;
+- callers must receive snapshots that cannot mutate authoritative history;
+- tests must attempt event replacement, deletion, reordering and nested payload mutation.
+
+No new public Trace fields may be added without a Contract Change Proposal.
+
+### CA-03 — MEDIUM: Explicit empty Session ID is silently replaced
+
+`session_id=session_id or uuid` treats an explicit empty string as if no ID were supplied. The frozen Schema requires a non-empty ID, so invalid caller input should not be silently converted into a different identity.
+
+Required closure: generate a UUID only when `session_id is None`; let explicit invalid values fail validation.
+
+### CA-04 — MEDIUM: Trace timestamp can be timezone-naive
+
+`TraceEvent.timestamp` currently accepts a naive Python `datetime` and serializes it without an offset. Phase 3 needs deterministic, timezone-aware audit timestamps.
+
+Required closure:
+
+- inject or wrap an aware UTC clock;
+- reject or normalize naive values according to the approved Phase 3 internal contract;
+- test serialization and ordering without sleeping or relying on wall-clock timing.
+
+This does not authorize adding a public field.
+
+### CA-05 — LOW: Frozen Case models are only shallowly frozen
+
+`TrainingCase` blocks top-level field assignment, but nested dictionaries such as `initial_state`, fault parameters and Evidence content remain mutable. `CaseSession` currently protects an active Session through deep copies, so the learner isolation tests pass.
+
+This is not a Phase 3 blocker under the current defensive-copy boundary. It remains a Phase 2 technical debt item: either enforce deep immutability later or describe the guarantee precisely as defensive isolation. Phase 3 must not expand this into an unrelated model refactor.
+
+### CA-06 — RESOLVED IN T3-01: Approved CCPs were not fully reflected in the original Freeze Pack summary
+
+Before reconciliation, `SimTrouble_FreezePack_v0.2/02_CONTRACTS.md` showed the pre-CCP empty `scoring_rules` example and original API route list, while the approved authoritative contract files already included versioned scoring rules and `GET /users/{user_id}/profile`.
+
+Closure: the current task branch synchronizes the summary with already approved CCP-001/CCP-002. This is documentation reconciliation only and introduces no route or scoring behavior beyond those approvals.
+
+### CA-07 — DECISION REQUIRED: ADR Trace ambitions exceed the frozen Session Schema
+
+ADR-013 describes richer event metadata such as event ID, sequence, actor and causation IDs. The frozen `TraceEvent` Schema has exactly seven fields and rejects additional properties.
+
+Phase 3 must follow the frozen Schema unless a CCP is explicitly approved. DG-03 remains open and must define semantics within the current seven fields or request a formal Contract change.
+
+## 4. Readiness conclusion
+
+Phase 2 functional behavior is stable and regression-tested, but the code is not yet safe to host an authoritative State Machine or append-only Trace.
+
+Phase 3 implementation may start only after:
+
+1. DG-01 through DG-04 are explicitly resolved;
+2. CA-01 and CA-02 have dedicated integrity tests and implementation tasks;
+3. CA-03 and CA-04 are included in the Session/Trace hardening acceptance;
+4. CA-06 remains reconciled without changing the approved Contract;
+5. the full Phase 1/2 regression suite remains green.
+
+No Skill, Tutor, API, UI, Simulation or persistence implementation is authorized by this audit.

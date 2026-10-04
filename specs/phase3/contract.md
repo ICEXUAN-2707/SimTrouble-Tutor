@@ -5,7 +5,7 @@
 ## Frozen invariants
 
 - Stage enum 与 `learner-session.schema.json` 完全一致，不新增、删除或改名；
-- `CaseSession.session.current_stage` 是当前 Session 阶段的唯一事实源；
+- `CaseSession` 内部持有的 `LearnerSession.current_stage` 是当前阶段的唯一事实源；对外只提供不能回写权威状态的快照/只读视图；
 - 只有 Core Domain 的 Diagnostic State Machine 可以改变 `current_stage`；
 - 成功迁移必须原子地更新阶段并追加审计事件，不允许只完成其中一项；
 - Trace 只追加，不删除、不覆盖、不重新排序；
@@ -27,6 +27,17 @@ tests/phase3_integration/
 ```
 
 具体类名、方法签名与文件拆分属于后续任务 Spec；本规划不提前冻结实现形态。
+
+## Pre-implementation code gates
+
+The Phase 2 cross-audit in `docs/phase2-code-cross-audit.md` identified integrity gaps that must close before State Machine behavior is added:
+
+- **CG-01 Session authority:** external callers cannot receive a mutable reference capable of changing authoritative Session state;
+- **CG-02 Trace append-only boundary:** existing Trace events, order and nested payloads cannot be rewritten through exposed references;
+- **CG-03 input/time validity:** an explicit empty Session ID is rejected, and Phase 3 Trace timestamps are timezone-aware and deterministic in tests;
+- **CG-04 regression compatibility:** Evidence, Hypothesis, Action and Progress behavior remains compatible with the frozen public contracts.
+
+These gates authorize only internal integrity work. They do not decide DG-01 through DG-04 and do not authorize public Schema/API changes.
 
 ## Decision Gates
 

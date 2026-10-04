@@ -10,6 +10,13 @@
 - [ ] DG-04 Trace storage 边界已批准；
 - [ ] 未修改冻结 stage enum、公共 Schema 或 API；若确需修改，存在已批准 CCP。
 
+## Session integrity gate
+
+- [ ] 外部调用方不能通过 `CaseSession` 暴露的引用直接改变权威 `current_stage`；
+- [ ] 创建后的 Session 不能被改成非法 stage、负计数或空 Evidence ID；
+- [ ] 仅当 `session_id is None` 时生成 UUID，显式空 ID 被拒绝；
+- [ ] Evidence、Hypothesis、Action 与 Progress 的 Phase 2 行为保持兼容。
+
 ## State Machine tests
 
 - [ ] 每条已批准迁移均可确定性执行；
@@ -22,6 +29,8 @@
 
 - [ ] 每次成功迁移追加一个符合 `learner-session.schema.json` 的 TraceEvent；
 - [ ] Trace 顺序与实际事件顺序一致，既有事件不被覆盖；
+- [ ] 已追加事件不能通过外部引用被替换、删除、重排或修改嵌套 payload；
+- [ ] timestamp 使用带时区的 UTC 时间，并可通过注入时钟确定性测试；
 - [ ] `stage`、`action_type`、`result` 的值符合 DG-03；
 - [ ] `evidence_id`、`current_hypothesis`、`tutor_hint` 只按已批准语义记录；
 - [ ] Trace 不包含 Ground Truth、完整 Optimal Path、未释放 Evidence 或评分密钥；
