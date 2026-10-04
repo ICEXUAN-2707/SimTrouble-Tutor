@@ -122,9 +122,15 @@ CCP-002 Option A was approved on 2026-10-04. `scoring_rules` now has a versioned
 
 ## 6. Repository status
 
-The supplied remote `https://github.com/ICEXUAN-2707/SimTrouble-Tutor.git` is reachable, but `git ls-remote` returned no refs. The local workspace is not a Git repository. No remote write was attempted.
+Repository initialization was completed after this audit:
 
-Before product code starts, the team should initialize the repository, install the v0.2 governance files, create `develop`, configure protection/review rules, and commit the Contract Freeze as the first auditable baseline.
+- remote: `https://github.com/ICEXUAN-2707/SimTrouble-Tutor.git`;
+- `main` and `develop` exist on the remote;
+- the Freeze Pack, contracts, Phase 2 Training Core and test baseline are versioned;
+- GitHub governance was completed by the repository owner;
+- development now follows `task/phaseX-* → phase/X-* → develop`.
+
+This status update does not change the Phase 1 audit result or any product Contract.
 
 ## 7. Gate conclusion
 

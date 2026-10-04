@@ -1,6 +1,6 @@
 # Phase 2 Contract
 
-> Status: DRAFT FOR NEXT ROUND
+> Status: IMPLEMENTED — contract retained as the Phase 2 implementation boundary.
 
 ## Intended modules
 
