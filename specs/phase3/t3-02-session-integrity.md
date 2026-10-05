@@ -1,6 +1,6 @@
 # T3-02 — Session Integrity Hardening
 
-> Status: IMPLEMENTED — PR #1 open; focused and full regression checks passed
+> Status: COMPLETED AND INTEGRATED — PR #1 merged as `62377f4`
 > Branch: `task/phase3-session-integrity`
 > Parent: `phase/3-diagnostic-state-machine`
 
@@ -59,3 +59,11 @@ No other product module is authorized.
 ## Contract impact
 
 No public field or serialized shape changes. This task strengthens the internal authority boundary required by the existing Contract.
+
+## Integration evidence
+
+- strict PR review found no runtime defect;
+- isolated clean-worktree environment: 32/32 tests passed;
+- adversarial mutation probe, dependency check and compile check passed;
+- the project owner explicitly accepted the task-specific EvidenceManager authorization and the isolated test gate in place of a missing remote Check Run;
+- post-merge Phase branch regression: 32/32 tests passed.
