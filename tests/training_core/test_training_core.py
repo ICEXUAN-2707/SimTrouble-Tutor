@@ -92,6 +92,39 @@ class SessionAndEvidenceTests(unittest.TestCase):
         self.assertEqual(SkillScores.zero(), session.skill_scores)
         self.assertEqual([], session.trace)
 
+    def test_session_property_returns_defensive_snapshot(self) -> None:
+        snapshot = self.case_session.session
+        snapshot.current_stage = DiagnosticStage.FINISH
+        snapshot.hint_count = -1
+        snapshot.evidence_seen.append("INJECTED")
+        snapshot.current_hypothesis = "injected"
+        snapshot.hypothesis_history.append("injected")
+        snapshot.skill_scores.safety = 100
+        snapshot.actions.append(
+            LearnerAction(action_type="inspect", parameters={"target": "injected"})
+        )
+        snapshot.actions[0].parameters["target"] = "rewritten"
+
+        authoritative_snapshot = self.case_session.session
+        self.assertEqual(DiagnosticStage.START, authoritative_snapshot.current_stage)
+        self.assertEqual(0, authoritative_snapshot.hint_count)
+        self.assertEqual([], authoritative_snapshot.evidence_seen)
+        self.assertIsNone(authoritative_snapshot.current_hypothesis)
+        self.assertEqual([], authoritative_snapshot.hypothesis_history)
+        self.assertEqual(SkillScores.zero(), authoritative_snapshot.skill_scores)
+        self.assertEqual([], authoritative_snapshot.actions)
+
+    def test_session_property_cannot_be_reassigned(self) -> None:
+        with self.assertRaises(AttributeError):
+            self.case_session.session = self.case_session.session
+
+    def test_explicit_empty_session_id_is_rejected(self) -> None:
+        with self.assertRaises(ValidationError):
+            CaseSession(user_id="user-001", case=self.case, session_id="")
+
+        generated = CaseSession(user_id="user-001", case=self.case, session_id=None)
+        self.assertTrue(generated.session.session_id)
+
     def test_public_case_has_exact_public_contract_fields(self) -> None:
         public = self.case_session.public_case_state()
         schema = json.loads(

@@ -39,7 +39,8 @@ No task below may infer an unresolved product behavior from an implementation co
 
 ## T3-02 — Session integrity hardening
 
-- Planned branch: `task/phase3-session-integrity`
+- Branch: `task/phase3-session-integrity`
+- Status: IMPLEMENTED; 32 tests pass; ready for PR review and integration.
 - Depends on: T3-01 merged into the Phase branch.
 - Scope:
   - close CA-01 by preventing exposed references from mutating authoritative Session state;
