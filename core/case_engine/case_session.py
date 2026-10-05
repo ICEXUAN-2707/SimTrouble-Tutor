@@ -24,8 +24,8 @@ class CaseSession:
         session_id: str | None = None,
     ) -> None:
         self._case = case.model_copy(deep=True)
-        self.session = LearnerSession(
-            session_id=session_id or str(uuid4()),
+        self._session = LearnerSession(
+            session_id=str(uuid4()) if session_id is None else session_id,
             case_id=case.case_id,
             user_id=user_id,
             current_stage=DiagnosticStage.START,
@@ -38,6 +38,12 @@ class CaseSession:
             skill_scores=SkillScores.zero(),
             trace=[],
         )
+
+    @property
+    def session(self) -> LearnerSession:
+        """Return a snapshot that cannot mutate authoritative Session state."""
+
+        return self._session.model_copy(deep=True)
 
     @property
     def authoritative_case(self) -> TrainingCase:
@@ -60,11 +66,17 @@ class CaseSession:
         )
 
     def record_action(self, action: LearnerAction) -> None:
-        self.session.actions.append(action.model_copy(deep=True))
+        self._session.actions.append(action.model_copy(deep=True))
 
     def submit_hypothesis(self, hypothesis: str) -> None:
         normalized = hypothesis.strip()
         if not normalized:
             raise ValueError("hypothesis must not be empty")
-        self.session.current_hypothesis = normalized
-        self.session.hypothesis_history.append(normalized)
+        self._session.current_hypothesis = normalized
+        self._session.hypothesis_history.append(normalized)
+
+    def _record_evidence_seen(self, evidence_id: str) -> None:
+        """EvidenceManager-only mutation after authoritative Case validation."""
+
+        if evidence_id not in self._session.evidence_seen:
+            self._session.evidence_seen.append(evidence_id)

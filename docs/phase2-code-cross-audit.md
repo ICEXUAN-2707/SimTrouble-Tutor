@@ -3,7 +3,7 @@
 > Audit date: 2026-10-05  
 > Audited baseline: `4f10c6c`  
 > Scope: existing contracts, Pydantic models, Training Core, data fixtures and tests  
-> Result: **FUNCTIONAL BASELINE PASSES; T3-02 MAY START, WHILE STATE MACHINE/TRACE REMAIN ORDERED BEHIND INTEGRITY GATES**
+> Result: **T3-02 CLOSES SESSION INTEGRITY FINDINGS; STATE MACHINE/TRACE REMAIN ORDERED BEHIND THEIR TASK GATES**
 
 ## 1. Audit method
 
@@ -42,7 +42,7 @@ Checks executed:
 
 ## 3. Findings
 
-### CA-01 — BLOCKER: Session authority can be bypassed
+### CA-01 — RESOLVED IN T3-02: Session authority is encapsulated
 
 Evidence:
 
@@ -51,16 +51,12 @@ Evidence:
 - A caller can assign `current_stage = 'NOT_A_STAGE'`, set negative counters, or append an empty Evidence ID after construction.
 - Existing tests directly assign `FINISH` and `OBSERVE` to Session objects when building Progress fixtures.
 
-Impact:
+Closure:
 
-This violates the frozen rule that Core State Machine is the only authority allowed to change Session stage. Phase 3 cannot be considered correct while callers can bypass it.
-
-Required closure:
-
-- keep one internal mutable Session state;
-- expose only a defensive snapshot/read view outside the Session aggregate;
-- route stage mutation through the Diagnostic State Machine boundary;
-- add negative tests proving external mutation cannot change authoritative state.
+- `CaseSession` keeps one internal mutable `_session` authority;
+- its public `session` property returns a fresh defensive deep-copy snapshot and has no setter;
+- existing aggregate commands and validated Evidence release update only the internal authority;
+- negative tests prove external mutation cannot change authoritative stage, counters, lists or nested values.
 
 This is an internal integrity correction. It does not require a JSON Schema or API change.
 
@@ -85,11 +81,11 @@ Required closure:
 
 No new public Trace fields may be added without a Contract Change Proposal.
 
-### CA-03 — MEDIUM: Explicit empty Session ID is silently replaced
+### CA-03 — RESOLVED IN T3-02: Explicit empty Session ID is rejected
 
 `session_id=session_id or uuid` treats an explicit empty string as if no ID were supplied. The frozen Schema requires a non-empty ID, so invalid caller input should not be silently converted into a different identity.
 
-Required closure: generate a UUID only when `session_id is None`; let explicit invalid values fail validation.
+Closure: UUID generation now occurs only when `session_id is None`; an explicit empty value reaches frozen-model validation and is rejected.
 
 ### CA-04 — MEDIUM: Trace timestamp can be timezone-naive
 
@@ -123,14 +119,14 @@ DG-03 now requires Phase 3 to use exactly the frozen seven fields. Rich ADR meta
 
 ## 4. Readiness conclusion
 
-Phase 2 functional behavior is stable and regression-tested, but the code is not yet safe to host an authoritative State Machine or append-only Trace.
+Phase 2 functional behavior remains stable and regression-tested. T3-02 now provides the authoritative Session boundary required before State Machine work; append-only Trace safeguards remain deliberately unimplemented until T3-04.
 
 DG-01 through DG-04, CA-06 and CA-07 are now resolved in the Phase 3 Spec.
 
-Phase 3 implementation may start with T3-02 Session integrity. State Machine and Trace work remain ordered behind the integrity gates:
+Phase 3 continues in the frozen task order:
 
-1. T3-02 closes CA-01 and CA-03;
-2. T3-03 implements only the frozen linear transition table;
+1. T3-02 has closed CA-01 and CA-03;
+2. after T3-02 integration, T3-03 may implement only the frozen linear transition table;
 3. T3-04 closes CA-02 and CA-04 using the frozen seven-field in-memory Trace;
 4. every task keeps the full Phase 1/2 regression suite green.
 

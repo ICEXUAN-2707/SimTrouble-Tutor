@@ -12,10 +12,10 @@
 
 ## Session integrity gate
 
-- [ ] 外部调用方不能通过 `CaseSession` 暴露的引用直接改变权威 `current_stage`；
-- [ ] 创建后的 Session 不能被改成非法 stage、负计数或空 Evidence ID；
-- [ ] 仅当 `session_id is None` 时生成 UUID，显式空 ID 被拒绝；
-- [ ] Evidence、Hypothesis、Action 与 Progress 的 Phase 2 行为保持兼容。
+- [x] 外部调用方不能通过 `CaseSession` 暴露的引用直接改变权威 `current_stage`；
+- [x] 创建后的 Session 不能被改成非法 stage、负计数或空 Evidence ID；
+- [x] 仅当 `session_id is None` 时生成 UUID，显式空 ID 被拒绝；
+- [x] Evidence、Hypothesis、Action 与 Progress 的 Phase 2 行为保持兼容。
 
 ## State Machine tests
 

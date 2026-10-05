@@ -11,10 +11,11 @@ from core.models import ReleasedEvidence
 
 class EvidenceManager:
     def request(self, case_session: CaseSession, evidence_id: str) -> ReleasedEvidence:
+        authoritative_case = case_session.authoritative_case
         evidence = next(
             (
                 item
-                for item in case_session.authoritative_case.evidence
+                for item in authoritative_case.evidence
                 if item.id == evidence_id
             ),
             None,
@@ -22,11 +23,10 @@ class EvidenceManager:
         if evidence is None:
             raise EvidenceNotFoundError(
                 f"evidence {evidence_id!r} is not present in case "
-                f"{case_session.authoritative_case.case_id}"
+                f"{authoritative_case.case_id}"
             )
 
-        if evidence.id not in case_session.session.evidence_seen:
-            case_session.session.evidence_seen.append(evidence.id)
+        case_session._record_evidence_seen(evidence.id)
 
         return ReleasedEvidence(
             id=evidence.id,

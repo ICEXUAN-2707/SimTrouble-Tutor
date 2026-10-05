@@ -23,7 +23,7 @@ No task below may infer an unresolved product behavior from an implementation co
 ## T3-01 — Close decisions and reconcile the approved baseline
 
 - Branch: `task/phase3-transition-trace-decisions`
-- Status: COMPLETED; ready for integration into the Phase branch.
+- Status: COMPLETED and integrated into the Phase branch.
 - Scope:
   - record explicit DG-01, DG-02, DG-03 and DG-04 decisions;
   - publish the complete executable transition table and prerequisites;
@@ -39,7 +39,8 @@ No task below may infer an unresolved product behavior from an implementation co
 
 ## T3-02 — Session integrity hardening
 
-- Planned branch: `task/phase3-session-integrity`
+- Branch: `task/phase3-session-integrity`
+- Status: IMPLEMENTED; 32 tests pass; PR #1 is open for review and integration.
 - Depends on: T3-01 merged into the Phase branch.
 - Scope:
   - close CA-01 by preventing exposed references from mutating authoritative Session state;
