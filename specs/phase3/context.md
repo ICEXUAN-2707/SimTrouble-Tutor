@@ -24,6 +24,13 @@
 - Trace 不得泄漏 Ground Truth、完整 Optimal Path、未释放 Evidence 或评分密钥；
 - Phase 3 不引入外部输入层，因此不修改 HTTP API Contract。
 
-## Planning constraint
+## Resolution rule
 
-冻结材料尚未给出完整可执行 transition table、迁移前置条件或 Trace 持久化边界。Phase 3 不以“合理推测”补齐这些产品行为；依赖这些行为的开发任务在决策冻结前不得开始。
+Phase 3 使用最严格的冻结基线解释：
+
+- 状态图只授权图中明确存在的有向边；
+- Schema/Contract 未定义的业务前置条件、字段和副作用视为未授权；
+- ADR 只在不扩展冻结 Schema/API 的范围内补充事件命名；
+- 已列入技术栈但没有本阶段 Contract 的组件不提前实现。
+
+DG-01 至 DG-04 的具体结论和依据记录在 `decision-record.md`。任何扩展必须先通过 CCP 或后续 Phase Spec。

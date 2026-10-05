@@ -1,6 +1,6 @@
 # Phase 3 Goal — Diagnostic State Machine + Trace
 
-> Status: PLANNED — implementation is blocked until the open Decision Gates in `contract.md` are approved.
+> Status: APPROVED FOR IMPLEMENTATION — DG-01 through DG-04 were resolved on 2026-10-05 by the restrictive frozen-baseline rule recorded in `decision-record.md`.
 
 ## Goal
 
@@ -20,13 +20,13 @@ START
 → FINISH
 ```
 
-该图冻结状态集合与主向流程，但不自动授权任何回退、回环、跳转或业务前置条件；合法 transition table 必须先通过 Phase 3 Decision Gate。
+该图冻结状态集合与主向流程。V0 Phase 3 只实现图中明确画出的单向相邻边；未明确授权的回退、回环、跳转和业务前置条件均不加入。
 
 ## Required outcomes
 
 - Diagnostic State Machine 是 Session 状态变化的唯一写入口；
 - 每次成功状态变化均可通过冻结的 Trace 字段审计；
-- 非法请求不会修改 Session；
+- 非法请求不改变 Session 领域状态，只按 DG-03 追加拒绝审计事件；
 - Trace 保持追加式，不通过更新既有事件改写历史；
 - 现有 Phase 1 Contract 与 Phase 2 行为保持兼容；
 - 无 Tutor、LLM、Skill 评分、API、UI 或仿真实现。
