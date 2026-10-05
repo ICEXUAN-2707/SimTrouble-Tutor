@@ -1,6 +1,6 @@
 # T3-02 — Session Integrity Hardening
 
-> Status: IMPLEMENTED — focused and full regression checks passed
+> Status: IMPLEMENTED — PR #1 open; focused and full regression checks passed
 > Branch: `task/phase3-session-integrity`
 > Parent: `phase/3-diagnostic-state-machine`
 
