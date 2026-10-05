@@ -23,18 +23,18 @@ No task below may infer an unresolved product behavior from an implementation co
 ## T3-01 — Close decisions and reconcile the approved baseline
 
 - Branch: `task/phase3-transition-trace-decisions`
-- Status: IN PROGRESS; implementation decisions remain blocked on Contract Owner input.
+- Status: COMPLETED; ready for integration into the Phase branch.
 - Scope:
   - record explicit DG-01, DG-02, DG-03 and DG-04 decisions;
   - publish the complete executable transition table and prerequisites;
-  - define Trace semantics within the frozen seven-field shape, or create a CCP if that shape must change;
+  - define Trace semantics within the frozen seven-field shape;
   - synchronize `02_CONTRACTS.md` with already approved CCP-001/CCP-002 without inventing new behavior;
   - retain the code cross-audit and final implementation plan.
 - Product code: none.
 - Exit:
-  - all four Decision Gates are closed;
+  - DG-01 through DG-04 are closed in `decision-record.md`;
   - no contradiction remains between the Phase 3 Spec and approved Contract;
-  - CA-06/CA-07 are resolved or explicitly deferred by the Contract Owner;
+  - CA-06 is reconciled and CA-07 is resolved in favor of the frozen seven-field Trace;
   - 29 regression tests pass.
 
 ## T3-02 — Session integrity hardening
@@ -63,16 +63,16 @@ No task below may infer an unresolved product behavior from an implementation co
 - Depends on: T3-01 and T3-02 merged.
 - Scope:
   - implement only the DG-01 transition table;
-  - enforce only DG-02 prerequisites;
+  - enforce the DG-02 topology-only conditions;
   - add a Core-internal rejection error without defining HTTP status codes;
   - test every allowed edge and representative denied edges.
 - Excludes:
   - Trace persistence;
   - API/Tutor/UI;
-  - hidden automatic transitions not present in DG-02.
+  - any automatic transition or business guard.
 - Exit:
   - valid transitions are deterministic;
-  - invalid requests cause no Session mutation;
+  - invalid requests cause no domain-state mutation beyond the required rejection Trace;
   - no caller can bypass the State Machine to advance stage;
   - Phase 1/2 and T3-02 regressions pass.
 
@@ -83,26 +83,28 @@ No task below may infer an unresolved product behavior from an implementation co
 - Scope:
   - close CA-02 with a single append boundary and immutable external snapshots;
   - close CA-04 with an injectable timezone-aware UTC clock;
-  - implement only DG-03 event semantics and action vocabulary;
+  - implement only the DG-03 field semantics, action vocabulary and result shapes;
   - use the frozen `TraceEvent` field set;
-  - include repository/database work only if DG-04 explicitly selects it.
+  - keep Trace only inside the in-memory authoritative Session as required by DG-04.
 - Required tests:
   - deterministic timestamp and ordering;
   - append, read and failure paths;
   - attempts to replace, delete, reorder or mutate an existing event do not alter authoritative Trace;
   - no Ground Truth, Optimal Path, hidden Evidence or scoring key leakage;
-  - selected DG-04 storage boundary survives its defined failure cases.
+  - the in-memory DG-04 boundary has no database/repository dependency.
 
 ## T3-05 — CaseSession command integration
 
 - Planned branch: `task/phase3-case-session-integration`
 - Depends on: T3-02 through T3-04 merged.
 - Scope:
-  - connect approved Evidence, Hypothesis, Action and Diagnosis commands to State Machine authorization and Trace recording;
+  - add the approved DG-03 Trace events around existing Evidence, Hypothesis and Action commands;
+  - keep stage transitions explicit and separate from those commands;
   - preserve Phase 2 public projections and data isolation;
   - add an ST-001 Session path integration test using only approved transitions.
 - Excludes:
   - FastAPI route implementation or HTTP errors;
+  - Diagnosis payload/domain implementation not present in the frozen Session model;
   - Tutor, Skill scoring, Mock/real Simulation;
   - new Case content.
 - Exit:

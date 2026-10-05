@@ -3,7 +3,7 @@
 > Audit date: 2026-10-05  
 > Audited baseline: `4f10c6c`  
 > Scope: existing contracts, Pydantic models, Training Core, data fixtures and tests  
-> Result: **FUNCTIONAL BASELINE PASSES; PHASE 3 IMPLEMENTATION IS NOT YET UNBLOCKED**
+> Result: **FUNCTIONAL BASELINE PASSES; T3-02 MAY START, WHILE STATE MACHINE/TRACE REMAIN ORDERED BEHIND INTEGRITY GATES**
 
 ## 1. Audit method
 
@@ -115,22 +115,23 @@ Before reconciliation, `SimTrouble_FreezePack_v0.2/02_CONTRACTS.md` showed the p
 
 Closure: the current task branch synchronizes the summary with already approved CCP-001/CCP-002. This is documentation reconciliation only and introduces no route or scoring behavior beyond those approvals.
 
-### CA-07 — DECISION REQUIRED: ADR Trace ambitions exceed the frozen Session Schema
+### CA-07 — RESOLVED FOR PHASE 3: ADR Trace ambitions exceed the frozen Session Schema
 
 ADR-013 describes richer event metadata such as event ID, sequence, actor and causation IDs. The frozen `TraceEvent` Schema has exactly seven fields and rejects additional properties.
 
-Phase 3 must follow the frozen Schema unless a CCP is explicitly approved. DG-03 remains open and must define semantics within the current seven fields or request a formal Contract change.
+DG-03 now requires Phase 3 to use exactly the frozen seven fields. Rich ADR metadata is deferred and still requires a formal CCP before any implementation.
 
 ## 4. Readiness conclusion
 
 Phase 2 functional behavior is stable and regression-tested, but the code is not yet safe to host an authoritative State Machine or append-only Trace.
 
-Phase 3 implementation may start only after:
+DG-01 through DG-04, CA-06 and CA-07 are now resolved in the Phase 3 Spec.
 
-1. DG-01 through DG-04 are explicitly resolved;
-2. CA-01 and CA-02 have dedicated integrity tests and implementation tasks;
-3. CA-03 and CA-04 are included in the Session/Trace hardening acceptance;
-4. CA-06 remains reconciled without changing the approved Contract;
-5. the full Phase 1/2 regression suite remains green.
+Phase 3 implementation may start with T3-02 Session integrity. State Machine and Trace work remain ordered behind the integrity gates:
+
+1. T3-02 closes CA-01 and CA-03;
+2. T3-03 implements only the frozen linear transition table;
+3. T3-04 closes CA-02 and CA-04 using the frozen seven-field in-memory Trace;
+4. every task keeps the full Phase 1/2 regression suite green.
 
 No Skill, Tutor, API, UI, Simulation or persistence implementation is authorized by this audit.
