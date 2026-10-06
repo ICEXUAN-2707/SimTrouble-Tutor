@@ -1,4 +1,4 @@
-"""Domain-level errors for the Phase 2 Training Core."""
+"""Domain-level errors for the deterministic Training Core."""
 
 
 class TrainingCoreError(Exception):
@@ -15,3 +15,7 @@ class MissingReferenceError(TrainingCoreError):
 
 class EvidenceNotFoundError(TrainingCoreError):
     """Raised when a requested Evidence ID is not present in the Session Case."""
+
+
+class InvalidStateTransitionError(TrainingCoreError):
+    """Raised when a requested diagnostic-stage transition is not approved."""

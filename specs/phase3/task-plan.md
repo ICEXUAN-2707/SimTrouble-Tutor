@@ -40,7 +40,7 @@ No task below may infer an unresolved product behavior from an implementation co
 ## T3-02 — Session integrity hardening
 
 - Branch: `task/phase3-session-integrity`
-- Status: IMPLEMENTED; 32 tests pass; PR #1 is open for review and integration.
+- Status: COMPLETED and integrated into the Phase branch as `62377f4`; 32 post-merge regression tests pass.
 - Depends on: T3-01 merged into the Phase branch.
 - Scope:
   - close CA-01 by preventing exposed references from mutating authoritative Session state;
@@ -60,22 +60,25 @@ No task below may infer an unresolved product behavior from an implementation co
 
 ## T3-03 — Diagnostic State Machine core
 
-- Planned branch: `task/phase3-state-machine`
+- Branch: `task/phase3-state-machine`
+- Status: IMPLEMENTED; PR #2 is open; 7 focused, 39 full and GitHub CI checks pass.
 - Depends on: T3-01 and T3-02 merged.
 - Scope:
   - implement only the DG-01 transition table;
   - enforce the DG-02 topology-only conditions;
   - add a Core-internal rejection error without defining HTTP status codes;
-  - test every allowed edge and representative denied edges.
+  - test every allowed edge and all 73 denied pairs.
 - Excludes:
   - Trace persistence;
   - API/Tutor/UI;
   - any automatic transition or business guard.
 - Exit:
   - valid transitions are deterministic;
-  - invalid requests cause no domain-state mutation beyond the required rejection Trace;
+  - invalid requests cause no Session mutation at the T3-03 pre-Trace boundary;
   - no caller can bypass the State Machine to advance stage;
   - Phase 1/2 and T3-02 regressions pass.
+
+Trace emission remains assigned to T3-04/T3-05. T3-03 must not claim the final rejection-Trace acceptance item.
 
 ## T3-04 — Append-only Session Trace
 

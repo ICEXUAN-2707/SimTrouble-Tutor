@@ -21,12 +21,17 @@ Phase 3 实现只允许触及：
 core/state_machine/
 core/session_trace/
 core/case_engine/case_session.py
+core/evidence_engine/evidence_manager.py
+core/errors.py
 tests/state_machine/
 tests/session_trace/
 tests/phase3_integration/
+tests/training_core/test_training_core.py
 ```
 
 具体类名、方法签名与文件拆分属于后续任务 Spec；本规划不提前冻结实现形态。
+
+`core/evidence_engine/evidence_manager.py` 与现有 Training Core 测试仅用于 T3-02/T3-05 的兼容接入；`core/errors.py` 仅用于 T3-03 的 Core 内部拒绝错误。上述授权由项目负责人在 PR #1 集成门禁中明确确认，不改变公共 Schema、API 或产品行为边界。
 
 ## Pre-implementation code gates
 

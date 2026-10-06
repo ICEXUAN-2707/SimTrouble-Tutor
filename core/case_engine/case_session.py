@@ -13,6 +13,7 @@ from core.models import (
     TrainingCase,
 )
 from core.models.contracts import DiagnosticStage
+from core.state_machine import DiagnosticStateMachine
 
 
 class CaseSession:
@@ -24,6 +25,7 @@ class CaseSession:
         session_id: str | None = None,
     ) -> None:
         self._case = case.model_copy(deep=True)
+        self._state_machine = DiagnosticStateMachine()
         self._session = LearnerSession(
             session_id=str(uuid4()) if session_id is None else session_id,
             case_id=case.case_id,
@@ -67,6 +69,11 @@ class CaseSession:
 
     def record_action(self, action: LearnerAction) -> None:
         self._session.actions.append(action.model_copy(deep=True))
+
+    def transition_to(self, target_stage: DiagnosticStage) -> None:
+        """Apply an explicit transition through the Core state authority."""
+
+        self._state_machine.transition(self._session, target_stage)
 
     def submit_hypothesis(self, hypothesis: str) -> None:
         normalized = hypothesis.strip()
