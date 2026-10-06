@@ -61,7 +61,7 @@ No task below may infer an unresolved product behavior from an implementation co
 ## T3-03 — Diagnostic State Machine core
 
 - Branch: `task/phase3-state-machine`
-- Status: PLANNED; product implementation has not started.
+- Status: IMPLEMENTED; 7 focused and 39 full tests pass; ready for PR review.
 - Depends on: T3-01 and T3-02 merged.
 - Scope:
   - implement only the DG-01 transition table;

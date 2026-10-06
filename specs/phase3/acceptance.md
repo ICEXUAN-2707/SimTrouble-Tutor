@@ -19,11 +19,11 @@
 
 ## State Machine tests
 
-- [ ] 每条已批准迁移均可确定性执行；
-- [ ] 所有未批准的跳转、回退和回环均被拒绝；
+- [x] 每条已批准迁移均可确定性执行；
+- [x] 所有未批准的跳转、回退和回环均被拒绝；
 - [ ] 拒绝路径不修改领域状态，只追加一个 `StateTransitionRejected`；
-- [ ] 八条允许边和其他拒绝边均有覆盖；
-- [ ] 前端/Tutor/任意调用方不能绕开 State Machine 直接推进阶段。
+- [x] 八条允许边和其他拒绝边均有覆盖；
+- [x] 前端/Tutor/任意调用方不能绕开 State Machine 直接推进阶段。
 
 ## Trace tests
 
@@ -41,8 +41,8 @@
 
 ## Integration and regression
 
-- [ ] 从 `START` 到 `FINISH` 的一条已批准完整路径可在 `ST-001` Session 上执行；
+- [x] 从 `START` 到 `FINISH` 的一条已批准完整路径可在 `ST-001` Session 上执行；
 - [ ] 所有循环、回退、跳转、自转换以及从 `FINISH` 出发的迁移均被拒绝并审计；
-- [ ] Phase 1 Contract tests 与 Phase 2 Training Core tests 全部通过；
-- [ ] Core source 未引入 LLM、LangGraph、Isaac、ROS 或 Gazebo；
-- [ ] 未实现 Skill 评分、HTTP API、前端、Tutor 或 Simulation Adapter。
+- [x] Phase 1 Contract tests 与 Phase 2 Training Core tests 全部通过；
+- [x] Core source 未引入 LLM、LangGraph、Isaac、ROS 或 Gazebo；
+- [x] 未实现 Skill 评分、HTTP API、前端、Tutor 或 Simulation Adapter。

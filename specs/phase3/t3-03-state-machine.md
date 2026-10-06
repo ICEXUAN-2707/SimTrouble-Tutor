@@ -1,6 +1,6 @@
 # T3-03 — Diagnostic State Machine Core
 
-> Status: PLANNED — implementation has not started
+> Status: IMPLEMENTED — focused and full regression checks passed
 > Branch: `task/phase3-state-machine`
 > Parent: `phase/3-diagnostic-state-machine` at integrated T3-02 commit `62377f4`
 
@@ -66,6 +66,8 @@ Expected modifications:
 
 No other product module is authorized for T3-03.
 
+The user separately authorized `.github/workflows/contracts-and-core.yml` to run CI for every pull request. This governance change does not alter product behavior or the T3-03 product-file boundary.
+
 ## Test matrix
 
 1. Accept each of the eight frozen edges.
@@ -102,3 +104,14 @@ T3-03 may be proposed for integration only when:
 ## Contract impact
 
 No public Contract change. T3-03 supplies only the internal Core transition authority already required by the frozen Phase 3 Contract.
+
+## Implementation evidence
+
+- all eight approved edges change only `current_stage`;
+- all 73 unapproved stage pairs are rejected without any Session mutation;
+- one explicit ST-001 aggregate path reaches `FINISH`, which remains terminal;
+- Evidence, Hypothesis and Action commands do not advance stage;
+- public Session snapshots cannot bypass the State Machine;
+- Trace remains unchanged on successful and rejected T3-03 commands;
+- 7/7 focused state-machine tests and 39/39 full regression tests pass;
+- dependency, compile, forbidden-import and stage-write-boundary audits pass.
