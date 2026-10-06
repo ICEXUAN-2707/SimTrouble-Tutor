@@ -61,7 +61,7 @@ No task below may infer an unresolved product behavior from an implementation co
 ## T3-03 — Diagnostic State Machine core
 
 - Branch: `task/phase3-state-machine`
-- Status: IMPLEMENTED; 7 focused and 39 full tests pass; ready for PR review.
+- Status: IMPLEMENTED; PR #2 is open; 7 focused, 39 full and GitHub CI checks pass.
 - Depends on: T3-01 and T3-02 merged.
 - Scope:
   - implement only the DG-01 transition table;

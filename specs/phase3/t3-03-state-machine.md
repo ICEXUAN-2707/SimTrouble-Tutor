@@ -1,6 +1,6 @@
 # T3-03 — Diagnostic State Machine Core
 
-> Status: IMPLEMENTED — focused and full regression checks passed
+> Status: IMPLEMENTED — PR #2 open; local gates and GitHub CI passed
 > Branch: `task/phase3-state-machine`
 > Parent: `phase/3-diagnostic-state-machine` at integrated T3-02 commit `62377f4`
 
