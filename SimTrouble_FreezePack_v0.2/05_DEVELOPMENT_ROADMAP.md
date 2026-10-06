@@ -41,7 +41,7 @@
 - 复杂 UI
 
 ## Phase 3 — Diagnostic State Machine + Trace
-状态：规格规划中；实现受 Phase 3 Decision Gates 阻塞。
+状态：实现中；Decision Gates 已关闭，T3-00 至 T3-03 已集成，T3-04 Trace 为当前任务。
 
 实现：
 ```text

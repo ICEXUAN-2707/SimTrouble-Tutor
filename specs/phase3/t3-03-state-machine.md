@@ -1,6 +1,6 @@
 # T3-03 — Diagnostic State Machine Core
 
-> Status: IMPLEMENTED — PR #2 open; local gates and GitHub CI passed
+> Status: COMPLETED AND INTEGRATED — PR #2 merged as `240229f`; 39 post-merge tests passed
 > Branch: `task/phase3-state-machine`
 > Parent: `phase/3-diagnostic-state-machine` at integrated T3-02 commit `62377f4`
 
