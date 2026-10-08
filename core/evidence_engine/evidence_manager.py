@@ -21,15 +21,16 @@ class EvidenceManager:
             None,
         )
         if evidence is None:
+            case_session._deny_evidence(evidence_id)
             raise EvidenceNotFoundError(
                 f"evidence {evidence_id!r} is not present in case "
                 f"{authoritative_case.case_id}"
             )
 
-        case_session._record_evidence_seen(evidence.id)
-
-        return ReleasedEvidence(
+        released = ReleasedEvidence(
             id=evidence.id,
             type=evidence.type,
             content=deepcopy(evidence.content),
         )
+        case_session._release_evidence(evidence.id)
+        return released

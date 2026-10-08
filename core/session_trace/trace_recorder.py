@@ -14,6 +14,13 @@ TraceActionType = Literal[
     "SessionStarted",
     "StateTransitioned",
     "StateTransitionRejected",
+    "ActionPerformed",
+    "EvidenceRequested",
+    "EvidenceReleased",
+    "EvidenceDenied",
+    "HypothesisAdded",
+    "HypothesisUpdated",
+    "HypothesisRejected",
     "SessionFinished",
 ]
 
@@ -69,18 +76,86 @@ class SessionTraceRecorder:
             result={"status": "finished"},
         )
 
+    def record_action_performed(self, session: LearnerSession) -> None:
+        self._record(
+            session,
+            action_type="ActionPerformed",
+            result={"status": "recorded"},
+        )
+
+    def record_evidence_requested(
+        self,
+        session: LearnerSession,
+        *,
+        evidence_id: str,
+    ) -> None:
+        self._record(
+            session,
+            action_type="EvidenceRequested",
+            evidence_id=evidence_id,
+            result={"status": "requested"},
+        )
+
+    def record_evidence_released(
+        self,
+        session: LearnerSession,
+        *,
+        evidence_id: str,
+    ) -> None:
+        self._record(
+            session,
+            action_type="EvidenceReleased",
+            evidence_id=evidence_id,
+            result={"status": "released"},
+        )
+
+    def record_evidence_denied(
+        self,
+        session: LearnerSession,
+        *,
+        evidence_id: str,
+    ) -> None:
+        self._record(
+            session,
+            action_type="EvidenceDenied",
+            evidence_id=evidence_id,
+            result={"status": "denied", "reason": "evidence_not_found"},
+        )
+
+    def record_hypothesis_added(self, session: LearnerSession) -> None:
+        self._record(
+            session,
+            action_type="HypothesisAdded",
+            result={"status": "recorded"},
+        )
+
+    def record_hypothesis_updated(self, session: LearnerSession) -> None:
+        self._record(
+            session,
+            action_type="HypothesisUpdated",
+            result={"status": "recorded"},
+        )
+
+    def record_hypothesis_rejected(self, session: LearnerSession) -> None:
+        self._record(
+            session,
+            action_type="HypothesisRejected",
+            result={"status": "rejected", "reason": "empty_hypothesis"},
+        )
+
     def _record(
         self,
         session: LearnerSession,
         *,
         action_type: TraceActionType,
         result: dict[str, Any],
+        evidence_id: str | None = None,
     ) -> None:
         event = TraceEvent(
             timestamp=normalize_utc_timestamp(self._clock()),
             stage=session.current_stage,
             action_type=action_type,
-            evidence_id=None,
+            evidence_id=evidence_id,
             current_hypothesis=session.current_hypothesis,
             tutor_hint=None,
             result=deepcopy(result),

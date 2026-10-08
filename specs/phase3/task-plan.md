@@ -83,7 +83,7 @@ Trace emission remains assigned to T3-04/T3-05. T3-03 must not claim the final r
 ## T3-04 — Append-only Session Trace
 
 - Branch: `task/phase3-session-trace`
-- Status: IMPLEMENTED AND LOCALLY VERIFIED; 48 tests pass, pending CI and integration into the Phase branch.
+- Status: COMPLETED and integrated into the Phase branch through PR #3 as `762eb02`; 48 post-merge tests pass.
 - Depends on: T3-01 through T3-03 merged.
 - Scope:
   - close CA-02 with a single append boundary and immutable external snapshots;
@@ -104,7 +104,8 @@ Trace emission remains assigned to T3-04/T3-05. T3-03 must not claim the final r
 
 ## T3-05 — CaseSession command integration
 
-- Planned branch: `task/phase3-case-session-integration`
+- Branch: `task/phase3-case-session-integration`
+- Status: IMPLEMENTED AND LOCALLY VERIFIED; 57 tests pass, pending CI and integration into the Phase branch.
 - Depends on: T3-02 through T3-04 merged.
 - Scope:
   - add the approved DG-03 Trace events around existing Evidence, Hypothesis and Action commands;
@@ -120,6 +121,10 @@ Trace emission remains assigned to T3-04/T3-05. T3-03 must not claim the final r
   - one approved `START → FINISH` path passes;
   - every integrated denied command is atomic and auditable according to DG-03;
   - existing Phase 1/2 behavior remains compatible.
+- Local evidence:
+  - exact Action, Evidence and Hypothesis event order/result tests pass;
+  - clock failures preserve the complete authoritative Session;
+  - ST-001 reaches `FINISH` through explicit transitions with exact Trace order.
 
 ## T3-06 — Phase 3 integration gate
 
