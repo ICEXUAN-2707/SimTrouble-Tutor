@@ -1,5 +1,7 @@
 # Phase 2 Code Cross-Audit for Phase 3 Readiness
 
+> Closure update (2026-10-08): the Phase 3 implementation closes the Session authority, State Machine, UTC clock and append-only Trace gaps identified below. The original audit text is retained as historical evidence rather than current project status.
+
 > Audit date: 2026-10-05  
 > Audited baseline: `4f10c6c`  
 > Scope: existing contracts, Pydantic models, Training Core, data fixtures and tests  

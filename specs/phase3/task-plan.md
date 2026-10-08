@@ -105,7 +105,7 @@ Trace emission remains assigned to T3-04/T3-05. T3-03 must not claim the final r
 ## T3-05 — CaseSession command integration
 
 - Branch: `task/phase3-case-session-integration`
-- Status: IMPLEMENTED AND LOCALLY VERIFIED; 57 tests pass, pending CI and integration into the Phase branch.
+- Status: COMPLETED and integrated into the Phase branch through PR #4 as `2e3554d`; 57 post-merge tests pass.
 - Depends on: T3-02 through T3-04 merged.
 - Scope:
   - add the approved DG-03 Trace events around existing Evidence, Hypothesis and Action commands;
@@ -128,7 +128,8 @@ Trace emission remains assigned to T3-04/T3-05. T3-03 must not claim the final r
 
 ## T3-06 — Phase 3 integration gate
 
-- Planned branch: `task/phase3-integration-gate`
+- Branch: `task/phase3-integration-gate`
+- Status: PASSED LOCALLY; acceptance and boundary evidence are recorded in `t3-06-integration-gate.md`, pending CI and integration.
 - Depends on: T3-01 through T3-05 merged.
 - Scope:
   - full acceptance coverage audit;
