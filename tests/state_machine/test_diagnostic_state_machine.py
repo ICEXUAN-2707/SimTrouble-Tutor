@@ -91,7 +91,14 @@ class DiagnosticStateMachineTests(unittest.TestCase):
             self.case_session.transition_to(target)
             snapshot = self.case_session.session
             self.assertIs(target, snapshot.current_stage)
-            self.assertEqual([], snapshot.trace)
+
+        action_types = [event.action_type for event in self.case_session.session.trace]
+        self.assertEqual(
+            ["SessionStarted"]
+            + ["StateTransitioned"] * len(APPROVED_EDGES)
+            + ["SessionFinished"],
+            action_types,
+        )
 
     def test_rejected_aggregate_transition_is_atomic(self) -> None:
         before = self.case_session.session.model_dump(mode="json")
@@ -99,7 +106,12 @@ class DiagnosticStateMachineTests(unittest.TestCase):
         with self.assertRaises(InvalidStateTransitionError):
             self.case_session.transition_to(DiagnosticStage.FINISH)
 
-        self.assertEqual(before, self.case_session.session.model_dump(mode="json"))
+        after = self.case_session.session.model_dump(mode="json")
+        before_trace = before.pop("trace")
+        after_trace = after.pop("trace")
+        self.assertEqual(before, after)
+        self.assertEqual(len(before_trace) + 1, len(after_trace))
+        self.assertEqual("StateTransitionRejected", after_trace[-1]["action_type"])
 
     def test_existing_commands_never_advance_stage(self) -> None:
         EvidenceManager().request(self.case_session, "E02")
@@ -127,7 +139,11 @@ class DiagnosticStateMachineTests(unittest.TestCase):
                 before = self.case_session.session.model_dump(mode="json")
                 with self.assertRaises(InvalidStateTransitionError):
                     self.case_session.transition_to(target)
+                after = self.case_session.session.model_dump(mode="json")
+                before_trace = before.pop("trace")
+                after_trace = after.pop("trace")
+                self.assertEqual(before, after)
+                self.assertEqual(len(before_trace) + 1, len(after_trace))
                 self.assertEqual(
-                    before,
-                    self.case_session.session.model_dump(mode="json"),
+                    "StateTransitionRejected", after_trace[-1]["action_type"]
                 )

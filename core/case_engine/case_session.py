@@ -13,6 +13,8 @@ from core.models import (
     TrainingCase,
 )
 from core.models.contracts import DiagnosticStage
+from core.errors import InvalidStateTransitionError
+from core.session_trace import Clock, SessionTraceRecorder
 from core.state_machine import DiagnosticStateMachine
 
 
@@ -23,9 +25,11 @@ class CaseSession:
         user_id: str,
         case: TrainingCase,
         session_id: str | None = None,
+        clock: Clock | None = None,
     ) -> None:
         self._case = case.model_copy(deep=True)
         self._state_machine = DiagnosticStateMachine()
+        self._trace_recorder = SessionTraceRecorder(clock=clock)
         self._session = LearnerSession(
             session_id=str(uuid4()) if session_id is None else session_id,
             case_id=case.case_id,
@@ -40,6 +44,7 @@ class CaseSession:
             skill_scores=SkillScores.zero(),
             trace=[],
         )
+        self._trace_recorder.record_session_started(self._session)
 
     @property
     def session(self) -> LearnerSession:
@@ -73,7 +78,25 @@ class CaseSession:
     def transition_to(self, target_stage: DiagnosticStage) -> None:
         """Apply an explicit transition through the Core state authority."""
 
-        self._state_machine.transition(self._session, target_stage)
+        candidate = self._session.model_copy(deep=True)
+        from_stage = candidate.current_stage
+        try:
+            self._state_machine.transition(candidate, target_stage)
+        except InvalidStateTransitionError:
+            self._trace_recorder.record_state_transition_rejected(
+                candidate,
+                requested_stage=target_stage,
+            )
+            self._session = candidate
+            raise
+
+        self._trace_recorder.record_state_transitioned(
+            candidate,
+            from_stage=from_stage,
+        )
+        if candidate.current_stage is DiagnosticStage.FINISH:
+            self._trace_recorder.record_session_finished(candidate)
+        self._session = candidate
 
     def submit_hypothesis(self, hypothesis: str) -> None:
         normalized = hypothesis.strip()

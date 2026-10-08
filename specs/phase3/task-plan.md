@@ -83,7 +83,7 @@ Trace emission remains assigned to T3-04/T3-05. T3-03 must not claim the final r
 ## T3-04 — Append-only Session Trace
 
 - Branch: `task/phase3-session-trace`
-- Status: APPROVED FOR IMPLEMENTATION; product code has not started.
+- Status: IMPLEMENTED AND LOCALLY VERIFIED; 48 tests pass, pending CI and integration into the Phase branch.
 - Depends on: T3-01 through T3-03 merged.
 - Scope:
   - close CA-02 with a single append boundary and immutable external snapshots;
@@ -97,6 +97,10 @@ Trace emission remains assigned to T3-04/T3-05. T3-03 must not claim the final r
   - attempts to replace, delete, reorder or mutate an existing event do not alter authoritative Trace;
   - no Ground Truth, Optimal Path, hidden Evidence or scoring key leakage;
   - the in-memory DG-04 boundary has no database/repository dependency.
+- Local evidence:
+  - 16 focused Trace/State Machine tests pass;
+  - 48 full regression tests pass;
+  - all 73 rejected transition pairs are audited without non-Trace mutation.
 
 ## T3-05 — CaseSession command integration
 

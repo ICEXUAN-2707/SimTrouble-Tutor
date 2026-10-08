@@ -1,6 +1,6 @@
 # T3-04 — Append-only Session Trace
 
-> Status: APPROVED FOR IMPLEMENTATION
+> Status: IMPLEMENTED AND LOCALLY VERIFIED — pending CI and Phase-branch integration
 > Branch: `task/phase3-session-trace`
 > Parent: `phase/3-diagnostic-state-machine` at integrated T3-03 commit `240229f`
 > Review gate: B review is explicitly deferred by the project owner for this task; CI and isolated verification remain mandatory.
