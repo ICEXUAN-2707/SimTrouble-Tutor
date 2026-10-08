@@ -90,7 +90,44 @@ class SessionAndEvidenceTests(unittest.TestCase):
         self.assertEqual([], session.hypothesis_history)
         self.assertEqual([], session.actions)
         self.assertEqual(SkillScores.zero(), session.skill_scores)
-        self.assertEqual([], session.trace)
+        self.assertEqual(1, len(session.trace))
+        started = session.trace[0]
+        self.assertEqual("SessionStarted", started.action_type)
+        self.assertIs(DiagnosticStage.START, started.stage)
+        self.assertEqual({"status": "started"}, started.result)
+
+    def test_session_property_returns_defensive_snapshot(self) -> None:
+        snapshot = self.case_session.session
+        snapshot.current_stage = DiagnosticStage.FINISH
+        snapshot.hint_count = -1
+        snapshot.evidence_seen.append("INJECTED")
+        snapshot.current_hypothesis = "injected"
+        snapshot.hypothesis_history.append("injected")
+        snapshot.skill_scores.safety = 100
+        snapshot.actions.append(
+            LearnerAction(action_type="inspect", parameters={"target": "injected"})
+        )
+        snapshot.actions[0].parameters["target"] = "rewritten"
+
+        authoritative_snapshot = self.case_session.session
+        self.assertEqual(DiagnosticStage.START, authoritative_snapshot.current_stage)
+        self.assertEqual(0, authoritative_snapshot.hint_count)
+        self.assertEqual([], authoritative_snapshot.evidence_seen)
+        self.assertIsNone(authoritative_snapshot.current_hypothesis)
+        self.assertEqual([], authoritative_snapshot.hypothesis_history)
+        self.assertEqual(SkillScores.zero(), authoritative_snapshot.skill_scores)
+        self.assertEqual([], authoritative_snapshot.actions)
+
+    def test_session_property_cannot_be_reassigned(self) -> None:
+        with self.assertRaises(AttributeError):
+            self.case_session.session = self.case_session.session
+
+    def test_explicit_empty_session_id_is_rejected(self) -> None:
+        with self.assertRaises(ValidationError):
+            CaseSession(user_id="user-001", case=self.case, session_id="")
+
+        generated = CaseSession(user_id="user-001", case=self.case, session_id=None)
+        self.assertTrue(generated.session.session_id)
 
     def test_public_case_has_exact_public_contract_fields(self) -> None:
         public = self.case_session.public_case_state()
@@ -131,12 +168,27 @@ class SessionAndEvidenceTests(unittest.TestCase):
         self.assertEqual("object pose mismatch", session.current_hypothesis)
         self.assertEqual(["object pose mismatch"], session.hypothesis_history)
         self.assertEqual(DiagnosticStage.START, session.current_stage)
+        self.assertEqual(
+            ["SessionStarted", "ActionPerformed", "HypothesisAdded"],
+            [event.action_type for event in session.trace],
+        )
+        self.assertEqual({"status": "recorded"}, session.trace[-2].result)
+        self.assertEqual({"status": "recorded"}, session.trace[-1].result)
 
     def test_empty_hypothesis_is_rejected_without_mutation(self) -> None:
+        before = self.case_session.session.model_dump(mode="json")
         with self.assertRaises(ValueError):
             self.case_session.submit_hypothesis("   ")
-        self.assertIsNone(self.case_session.session.current_hypothesis)
-        self.assertEqual([], self.case_session.session.hypothesis_history)
+        after = self.case_session.session.model_dump(mode="json")
+        before_trace = before.pop("trace")
+        after_trace = after.pop("trace")
+        self.assertEqual(before, after)
+        self.assertEqual(len(before_trace) + 1, len(after_trace))
+        self.assertEqual("HypothesisRejected", after_trace[-1]["action_type"])
+        self.assertEqual(
+            {"status": "rejected", "reason": "empty_hypothesis"},
+            after_trace[-1]["result"],
+        )
 
     def test_evidence_release_strips_internal_metadata_and_is_idempotent(self) -> None:
         manager = EvidenceManager()
@@ -145,13 +197,36 @@ class SessionAndEvidenceTests(unittest.TestCase):
         self.assertFalse(hasattr(released, "related_faults"))
         self.assertFalse(hasattr(released, "information_value"))
         manager.request(self.case_session, "E02")
-        self.assertEqual(["E02"], self.case_session.session.evidence_seen)
+        session = self.case_session.session
+        self.assertEqual(["E02"], session.evidence_seen)
+        self.assertEqual(
+            [
+                "SessionStarted",
+                "EvidenceRequested",
+                "EvidenceReleased",
+                "EvidenceRequested",
+                "EvidenceReleased",
+            ],
+            [event.action_type for event in session.trace],
+        )
+        self.assertTrue(all(event.evidence_id == "E02" for event in session.trace[1:]))
 
     def test_unknown_evidence_does_not_mutate_session(self) -> None:
         before = copy.deepcopy(self.case_session.session.model_dump(mode="json"))
         with self.assertRaises(EvidenceNotFoundError):
             EvidenceManager().request(self.case_session, "UNKNOWN")
-        self.assertEqual(before, self.case_session.session.model_dump(mode="json"))
+        after = self.case_session.session.model_dump(mode="json")
+        before_trace = before.pop("trace")
+        after_trace = after.pop("trace")
+        self.assertEqual(before, after)
+        self.assertEqual(len(before_trace) + 2, len(after_trace))
+        self.assertEqual(
+            ["EvidenceRequested", "EvidenceDenied"],
+            [event["action_type"] for event in after_trace[-2:]],
+        )
+        self.assertTrue(
+            all(event["evidence_id"] == "UNKNOWN" for event in after_trace[-2:])
+        )
 
 
 class ProgressTests(unittest.TestCase):

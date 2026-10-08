@@ -1,6 +1,6 @@
 # Phase 2 Acceptance
 
-> Status: DRAFT FOR NEXT ROUND
+> Status: PASSED — all 29 repository tests passed on 2026-10-05.
 
 ## Loader tests
 
