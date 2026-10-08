@@ -90,7 +90,11 @@ class SessionAndEvidenceTests(unittest.TestCase):
         self.assertEqual([], session.hypothesis_history)
         self.assertEqual([], session.actions)
         self.assertEqual(SkillScores.zero(), session.skill_scores)
-        self.assertEqual([], session.trace)
+        self.assertEqual(1, len(session.trace))
+        started = session.trace[0]
+        self.assertEqual("SessionStarted", started.action_type)
+        self.assertIs(DiagnosticStage.START, started.stage)
+        self.assertEqual({"status": "started"}, started.result)
 
     def test_session_property_returns_defensive_snapshot(self) -> None:
         snapshot = self.case_session.session
