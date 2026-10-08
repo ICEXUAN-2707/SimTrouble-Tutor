@@ -2,9 +2,9 @@
 
 > Closure update (2026-10-08): the Phase 3 implementation closes the Session authority, State Machine, UTC clock and append-only Trace gaps identified below. The original audit text is retained as historical evidence rather than current project status.
 
-> Audit date: 2026-10-05  
-> Audited baseline: `4f10c6c`  
-> Scope: existing contracts, Pydantic models, Training Core, data fixtures and tests  
+> Audit date: 2026-10-05
+> Audited baseline: `4f10c6c`
+> Scope: existing contracts, Pydantic models, Training Core, data fixtures and tests
 > Result: **T3-02 CLOSES SESSION INTEGRITY FINDINGS; STATE MACHINE/TRACE REMAIN ORDERED BEHIND THEIR TASK GATES**
 
 ## 1. Audit method
