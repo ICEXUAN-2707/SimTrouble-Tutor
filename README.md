@@ -50,14 +50,14 @@ apps/demo（静态页面 / HTTP / 内存编排 / Demo-only 规则）
 - Phase 1：Contract Freeze 已完成，CCP-001/CCP-002 已批准；
 - Phase 2：Training Core 已实现并通过回归测试；
 - Phase 3：Diagnostic State Machine + 内存 Append-only Trace 已实现、通过 57 项回归并合入 `develop`；
-- Demo v0.1：模块化壳层已实现，正在补充 ST-001 E2E 与启动烟测；不代表 Phase 4–8 完成。
+- Demo v0.1：模块化壳层、ST-001 HTTP E2E 与启动烟测已实现；不代表 Phase 4–8 完成。
 
 | 能力 | 当前事实 |
 |---|---|
 | ST-001 Case、Evidence、Hypothesis、Action | 已实现 |
 | Diagnostic State Machine | 已实现 |
 | Append-only Session Trace | 已实现 |
-| ST-001 浏览器演示 | 模块化壳层已复用官方 Core；自动化验收进行中 |
+| ST-001 浏览器演示 | 已复用官方 Core，并由 HTTP E2E 与启动烟测覆盖 |
 | 五维 Skill 评分 | 未实现 |
 | LangGraph / LLM Tutor | 未实现 |
 | Mock / 真实仿真 | 未实现 |

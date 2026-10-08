@@ -59,3 +59,4 @@ The standard-library Demo server is a pre-release local adapter, not the planned
 - `tests/state_machine/`: approved and denied transition topology;
 - `tests/session_trace/`: Trace vocabulary, timestamps, atomicity and leakage;
 - `tests/phase3_integration/`: explicit ST-001 Core path.
+- `tests/demo/`: ST-001 HTTP end-to-end path and real subprocess startup smoke.
