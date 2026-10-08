@@ -34,7 +34,7 @@ Simulation          Mock Adapter / later Gazebo or Isaac Adapter
 - Phase 0：外部项目技术尽调已完成；
 - Phase 1：Contract Freeze 已完成，CCP-001/CCP-002 已批准；
 - Phase 2：Training Core 已实现并通过回归测试；
-- Phase 3：Diagnostic State Machine + Trace 正在进行规格规划，尚未开始实现。
+- Phase 3：Diagnostic State Machine + 内存 Append-only Trace 已实现并通过 57 项 Phase 1–3 回归测试，正在完成到 `develop` 的集成门。
 
 当前权威基线与阶段规格：
 

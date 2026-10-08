@@ -1,6 +1,6 @@
 # T3-05 — CaseSession Command Integration
 
-> Status: IMPLEMENTED AND LOCALLY VERIFIED — pending CI and Phase-branch integration
+> Status: COMPLETED AND INTEGRATED — PR #4 merged as `2e3554d`
 > Branch: `task/phase3-case-session-integration`
 > Parent: `phase/3-diagnostic-state-machine` at integrated T3-04 commit `762eb02`
 

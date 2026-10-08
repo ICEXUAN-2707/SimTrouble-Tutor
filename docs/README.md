@@ -10,6 +10,7 @@
 | `reuse-analysis.md` | 外部项目技术尽调与可复用范围 | completed |
 | `license-check.md` | 外部依赖和参考项目许可检查 | completed |
 | `phase1-contract-audit.md` | Phase 1 Contract 交叉审计 | passed after CCP-001/CCP-002 |
+| `phase2-code-cross-audit.md` | Phase 2 到 Phase 3 的代码边界审计 | historical findings closed by Phase 3 |
 
 ## Source material
 

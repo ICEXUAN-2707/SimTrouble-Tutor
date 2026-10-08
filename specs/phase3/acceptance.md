@@ -1,6 +1,6 @@
 # Phase 3 Acceptance
 
-> Status: APPROVED FOR IMPLEMENTATION — DG-01 through DG-04 are resolved; implementation checkboxes remain open.
+> Status: PASSED — all approved Phase 3 behaviors have executable test evidence.
 
 ## Decision and scope gate
 
