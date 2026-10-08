@@ -35,7 +35,7 @@
 - [x] `stage`、`action_type`、`result` 的值符合 DG-03；
 - [x] `action_type` 不超出 `decision-record.md` 的 Phase 3 白名单；
 - [x] T3-04 事件中的 `evidence_id`、`current_hypothesis`、`tutor_hint` 按已批准语义记录；Evidence/Hypothesis/Action 事件留待 T3-05；
-- [ ] Evidence、Hypothesis 与 Action 的事件数量和顺序符合 DG-03 emission rules；
+- [x] Evidence、Hypothesis 与 Action 的事件数量和顺序符合 DG-03 emission rules；
 - [x] Trace 不包含 Ground Truth、完整 Optimal Path、未释放 Evidence 或评分密钥；
 - [x] Trace 只保存在内存 Session 中，代码和依赖均不包含 SQLAlchemy/SQLite repository。
 

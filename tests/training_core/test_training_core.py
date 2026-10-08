@@ -168,12 +168,27 @@ class SessionAndEvidenceTests(unittest.TestCase):
         self.assertEqual("object pose mismatch", session.current_hypothesis)
         self.assertEqual(["object pose mismatch"], session.hypothesis_history)
         self.assertEqual(DiagnosticStage.START, session.current_stage)
+        self.assertEqual(
+            ["SessionStarted", "ActionPerformed", "HypothesisAdded"],
+            [event.action_type for event in session.trace],
+        )
+        self.assertEqual({"status": "recorded"}, session.trace[-2].result)
+        self.assertEqual({"status": "recorded"}, session.trace[-1].result)
 
     def test_empty_hypothesis_is_rejected_without_mutation(self) -> None:
+        before = self.case_session.session.model_dump(mode="json")
         with self.assertRaises(ValueError):
             self.case_session.submit_hypothesis("   ")
-        self.assertIsNone(self.case_session.session.current_hypothesis)
-        self.assertEqual([], self.case_session.session.hypothesis_history)
+        after = self.case_session.session.model_dump(mode="json")
+        before_trace = before.pop("trace")
+        after_trace = after.pop("trace")
+        self.assertEqual(before, after)
+        self.assertEqual(len(before_trace) + 1, len(after_trace))
+        self.assertEqual("HypothesisRejected", after_trace[-1]["action_type"])
+        self.assertEqual(
+            {"status": "rejected", "reason": "empty_hypothesis"},
+            after_trace[-1]["result"],
+        )
 
     def test_evidence_release_strips_internal_metadata_and_is_idempotent(self) -> None:
         manager = EvidenceManager()
@@ -182,13 +197,36 @@ class SessionAndEvidenceTests(unittest.TestCase):
         self.assertFalse(hasattr(released, "related_faults"))
         self.assertFalse(hasattr(released, "information_value"))
         manager.request(self.case_session, "E02")
-        self.assertEqual(["E02"], self.case_session.session.evidence_seen)
+        session = self.case_session.session
+        self.assertEqual(["E02"], session.evidence_seen)
+        self.assertEqual(
+            [
+                "SessionStarted",
+                "EvidenceRequested",
+                "EvidenceReleased",
+                "EvidenceRequested",
+                "EvidenceReleased",
+            ],
+            [event.action_type for event in session.trace],
+        )
+        self.assertTrue(all(event.evidence_id == "E02" for event in session.trace[1:]))
 
     def test_unknown_evidence_does_not_mutate_session(self) -> None:
         before = copy.deepcopy(self.case_session.session.model_dump(mode="json"))
         with self.assertRaises(EvidenceNotFoundError):
             EvidenceManager().request(self.case_session, "UNKNOWN")
-        self.assertEqual(before, self.case_session.session.model_dump(mode="json"))
+        after = self.case_session.session.model_dump(mode="json")
+        before_trace = before.pop("trace")
+        after_trace = after.pop("trace")
+        self.assertEqual(before, after)
+        self.assertEqual(len(before_trace) + 2, len(after_trace))
+        self.assertEqual(
+            ["EvidenceRequested", "EvidenceDenied"],
+            [event["action_type"] for event in after_trace[-2:]],
+        )
+        self.assertTrue(
+            all(event["evidence_id"] == "UNKNOWN" for event in after_trace[-2:])
+        )
 
 
 class ProgressTests(unittest.TestCase):

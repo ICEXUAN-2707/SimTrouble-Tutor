@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from uuid import uuid4
 
+from core.errors import InvalidStateTransitionError
 from core.models import (
     CasePublicState,
     EvidenceOption,
@@ -13,7 +14,6 @@ from core.models import (
     TrainingCase,
 )
 from core.models.contracts import DiagnosticStage
-from core.errors import InvalidStateTransitionError
 from core.session_trace import Clock, SessionTraceRecorder
 from core.state_machine import DiagnosticStateMachine
 
@@ -73,7 +73,10 @@ class CaseSession:
         )
 
     def record_action(self, action: LearnerAction) -> None:
-        self._session.actions.append(action.model_copy(deep=True))
+        candidate = self._session.model_copy(deep=True)
+        candidate.actions.append(action.model_copy(deep=True))
+        self._trace_recorder.record_action_performed(candidate)
+        self._session = candidate
 
     def transition_to(self, target_stage: DiagnosticStage) -> None:
         """Apply an explicit transition through the Core state authority."""
@@ -100,13 +103,46 @@ class CaseSession:
 
     def submit_hypothesis(self, hypothesis: str) -> None:
         normalized = hypothesis.strip()
+        candidate = self._session.model_copy(deep=True)
         if not normalized:
+            self._trace_recorder.record_hypothesis_rejected(candidate)
+            self._session = candidate
             raise ValueError("hypothesis must not be empty")
-        self._session.current_hypothesis = normalized
-        self._session.hypothesis_history.append(normalized)
+        is_update = candidate.current_hypothesis is not None
+        candidate.current_hypothesis = normalized
+        candidate.hypothesis_history.append(normalized)
+        if is_update:
+            self._trace_recorder.record_hypothesis_updated(candidate)
+        else:
+            self._trace_recorder.record_hypothesis_added(candidate)
+        self._session = candidate
 
-    def _record_evidence_seen(self, evidence_id: str) -> None:
-        """EvidenceManager-only mutation after authoritative Case validation."""
+    def _release_evidence(self, evidence_id: str) -> None:
+        """EvidenceManager-only atomic release after Case validation."""
 
-        if evidence_id not in self._session.evidence_seen:
-            self._session.evidence_seen.append(evidence_id)
+        candidate = self._session.model_copy(deep=True)
+        self._trace_recorder.record_evidence_requested(
+            candidate,
+            evidence_id=evidence_id,
+        )
+        if evidence_id not in candidate.evidence_seen:
+            candidate.evidence_seen.append(evidence_id)
+        self._trace_recorder.record_evidence_released(
+            candidate,
+            evidence_id=evidence_id,
+        )
+        self._session = candidate
+
+    def _deny_evidence(self, evidence_id: str) -> None:
+        """EvidenceManager-only denial that preserves all non-Trace state."""
+
+        candidate = self._session.model_copy(deep=True)
+        self._trace_recorder.record_evidence_requested(
+            candidate,
+            evidence_id=evidence_id,
+        )
+        self._trace_recorder.record_evidence_denied(
+            candidate,
+            evidence_id=evidence_id,
+        )
+        self._session = candidate
