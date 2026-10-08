@@ -1,7 +1,7 @@
 # Phase 3 Decision Record — DG-01 to DG-04
 
-> Decision date: 2026-10-05  
-> Status: APPROVED BY FROZEN-BASELINE INTERPRETATION  
+> Decision date: 2026-10-05
+> Status: APPROVED BY FROZEN-BASELINE INTERPRETATION
 > Rule: absence of explicit authorization means the behavior is excluded from Phase 3 V0.
 
 ## Authority order
