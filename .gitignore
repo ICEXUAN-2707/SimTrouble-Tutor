@@ -9,3 +9,6 @@ __pycache__/
 !.env.example
 coverage.xml
 htmlcov/
+/.tmp/
+/zjh/
+/学生卡.jpg
