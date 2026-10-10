@@ -20,6 +20,15 @@ HIDDEN_KEYS = {
     "related_faults",
 }
 
+PROTECTED_E02_FRAGMENTS = (
+    "70 mm",
+    "70毫米",
+    "70 毫米",
+    "object_pose_offset",
+    "object_pose_mismatch",
+    "工件 X 方向位置比预期多",
+)
+
 
 def nested_keys(value: Any) -> set[str]:
     if isinstance(value, dict):
@@ -150,6 +159,52 @@ class DemoHttpEndToEndTests(unittest.TestCase):
         self.assertEqual([], second["released"])
         self.assertEqual(1, len(other_cookies))
         self.assertNotEqual(next(iter(self.cookies)).value, next(iter(other_cookies)).value)
+
+    def test_e02_value_is_absent_until_authorized_release(self) -> None:
+        with self.client.open(self.base_url + "/", timeout=5) as response:
+            page = response.read().decode("utf-8")
+        state, _ = self.get_json("/api/state")
+
+        initial_client_data = page + json.dumps(state, ensure_ascii=False)
+        for protected in PROTECTED_E02_FRAGMENTS:
+            self.assertNotIn(protected, initial_client_data)
+
+        state = self.post_json("/api/evidence", {"id": "E01"})
+        state = self.post_json("/api/evidence", {"id": "E03"})
+        before_e02 = json.dumps(state, ensure_ascii=False)
+        for protected in PROTECTED_E02_FRAGMENTS:
+            self.assertNotIn(protected, before_e02)
+
+        state = self.post_json("/api/evidence", {"id": "E02"})
+        released_e02 = next(item for item in state["released"] if item["id"] == "E02")
+        self.assertEqual(
+            {"axis": "x", "expected_mm": 0, "actual_mm": 70, "offset_mm": 70},
+            released_e02["content"],
+        )
+
+    def test_d1_visual_controls_stay_on_the_existing_demo_surface(self) -> None:
+        with self.client.open(self.base_url + "/", timeout=5) as response:
+            page = response.read().decode("utf-8")
+
+        for marker in (
+            'id="visual-start"',
+            'id="visual-replay"',
+            'id="visual-skip"',
+            'id="visual-reset"',
+            'id="retry"',
+            "READY",
+            "EXECUTING",
+            "GRASP_ATTEMPT",
+            "FAILURE_OBSERVED",
+            "prefers-reduced-motion",
+            "Core 已记录学习操作；当前 Trace 未公开更细的操作分类",
+        ):
+            self.assertIn(marker, page)
+
+        self.assertNotIn("/api/transition", page)
+        self.assertNotIn("/api/stage", page)
+        for protected in PROTECTED_E02_FRAGMENTS:
+            self.assertNotIn(protected, page)
 
 
 if __name__ == "__main__":

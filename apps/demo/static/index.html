@@ -3,92 +3,664 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SimTrouble Tutor · ST-001 Demo</title>
+  <title>SimTrouble Tutor · ST-001 工业实训</title>
   <style>
-    :root{--ink:#172426;--muted:#687879;--teal:#007e79;--paper:#fff;--line:#dfe8e6;--orange:#de6b36}
-    *{box-sizing:border-box}body{margin:0;font-family:"Microsoft YaHei","Noto Sans CJK SC",Arial,sans-serif;background:#f5f7f5;color:var(--ink)}
-    button,input,textarea{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.55}
-    header{background:#123836;color:#fff;padding:20px 32px;display:flex;align-items:center;justify-content:space-between;gap:16px}
-    .brand{font-size:23px;font-weight:800}.brand span{color:#84d2c7}.topmeta{font-size:13px;color:#c7e2dc}.topmeta b{color:#fff}
-    .banner{background:#e7f2ef;border-bottom:1px solid #d3e5df;padding:11px 32px;color:#35635f;font-size:13px}
-    main{max-width:1500px;margin:24px auto;padding:0 24px}.hero{display:flex;align-items:end;justify-content:space-between;gap:20px;margin-bottom:20px}
-    .eyebrow,.label{color:var(--teal);font-size:11px;font-weight:800;letter-spacing:1.5px}.eyebrow{letter-spacing:2px}
-    h1{margin:5px 0 4px;font-size:28px;line-height:1.25}h2{font-size:17px;margin:0}.sub,.small{color:var(--muted);font-size:12px;line-height:1.55}.sub{font-size:14px;margin:0}
-    .reset{border:1px solid #bed5cf;background:white;color:#1b625d;border-radius:8px;padding:10px 15px;font-weight:700}
-    .layout{display:grid;grid-template-columns:minmax(300px,1.1fr) minmax(400px,1.35fr) minmax(280px,.85fr);gap:18px;align-items:start}
-    .card{background:var(--paper);border:1px solid var(--line);border-radius:13px;box-shadow:0 3px 14px rgba(16,51,47,.04);overflow:hidden}.cardbody,.section{padding:20px}
-    .scene{background:linear-gradient(135deg,#e8f1ef,#d8e9e4);height:220px;position:relative;overflow:hidden}.scene svg{width:100%;height:100%}
-    .scene-caption{position:absolute;bottom:13px;left:16px;background:#fffdf0;border:1px solid #e8dcae;border-radius:6px;padding:5px 9px;font-size:11px;color:#746527;font-weight:700}
-    .observations{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:15px 0}.obs{border:1px solid var(--line);background:#fafcfb;border-radius:7px;padding:10px 11px;font-size:12px}.obs b{display:block;font-size:11px;color:#6a7a78;margin-bottom:4px}.obs.alert{background:#fff4ef;border-color:#f3d7c8;color:#a64e2d}
-    .evidence{display:grid;gap:8px;margin-top:8px}.ev{width:100%;display:flex;align-items:center;justify-content:space-between;text-align:left;background:white;border:1px solid var(--line);border-radius:8px;padding:11px 12px;color:var(--ink)}.ev:hover{border-color:var(--teal);background:#f7fbfa}.ev strong{color:var(--teal)}.ev small{display:block;color:var(--muted);font-size:11px;margin-top:3px}.pill{font-size:11px;padding:4px 7px;border-radius:20px;background:#e9f4f1;color:#33766e}.ev.open .pill{background:#d5ede8;color:#126e61}
-    .data{margin:8px 0 0;padding:9px 11px;border-radius:6px;background:#f4f8f7;font-size:12px;color:#425c59;white-space:pre-wrap;word-break:break-word}
-    .chat-head{padding:19px 20px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}.status{border-radius:20px;padding:6px 9px;font-size:11px;background:#e7f4ef;color:#327466}
-    .chat{height:397px;overflow:auto;padding:19px;background:#fcfdfc;display:flex;flex-direction:column;gap:11px}.bubble{max-width:90%;padding:12px 14px;border-radius:12px;font-size:13px;line-height:1.65;white-space:pre-wrap}.bubble.tutor{align-self:flex-start;background:#edf5f2;border:1px solid #dceae5}.bubble.user{align-self:flex-end;color:white;background:#226c66}.who{font-size:10px;font-weight:800;letter-spacing:.7px;margin-bottom:4px;opacity:.67}
-    .prompts{padding:11px 19px 3px;border-top:1px solid var(--line);display:flex;gap:6px;flex-wrap:wrap}.prompt{border:1px solid #d5e4df;border-radius:20px;background:#fff;color:#316b63;padding:6px 9px;font-size:11px}.compose{display:flex;gap:8px;padding:12px 19px 19px}.compose input{flex:1;min-width:0;border:1px solid #c9d8d2;border-radius:7px;padding:11px;font-size:13px;outline:none}
-    .primary{border:0;background:var(--teal);color:#fff;font-weight:700;border-radius:7px;padding:10px 15px}.primary:hover{background:#006f69}.section{border-bottom:1px solid var(--line)}.section:last-child{border-bottom:0}.field{width:100%;resize:vertical;min-height:65px;border:1px solid #ccd9d5;border-radius:7px;padding:9px 10px;font-size:12px;line-height:1.5;outline:none}.full{width:100%;margin-top:8px}.current{font-size:12px;line-height:1.6;color:#43615b;background:#f2f8f6;border-radius:7px;padding:9px;margin-top:9px;word-break:break-word}
-    .timeline{display:grid;gap:12px;max-height:340px;overflow:auto}.event{border-left:2px solid #b8d9d1;padding-left:10px;font-size:12px;line-height:1.4}.event b{color:#2d756c;margin-right:6px}.event span{color:#697a77;word-break:break-word}.result{border:1px solid #c9e2dc;background:#f2f9f6;border-radius:8px;padding:13px;font-size:12px;line-height:1.6}.result strong{color:#116d5f}.foot{font-size:11px;color:#7d8985;text-align:center;margin:20px 0 28px}#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#173c38;color:white;padding:10px 16px;border-radius:7px;font-size:12px;display:none;z-index:2}
-    @media(max-width:1100px){.layout{grid-template-columns:1fr 1fr}.right{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}.right .section{border-bottom:0;border-right:1px solid var(--line)}}
-    @media(max-width:720px){header{padding:16px 18px;align-items:flex-start;flex-direction:column}.banner{padding:10px 18px}main{padding:0 14px}.hero{align-items:start;flex-direction:column}.layout,.right{display:block}.card{margin-bottom:15px}.right .section{border-right:0;border-bottom:1px solid var(--line)}}
+    :root{
+      color-scheme:dark;
+      --bg:#081313;--surface:#0f2020;--surface-2:#142a29;--panel:#172f2e;
+      --line:#2a4946;--line-strong:#3a625d;--text:#edf7f4;--muted:#9bb4af;
+      --teal:#70d5b6;--teal-strong:#2fb894;--teal-soft:#183c36;
+      --amber:#f2ab67;--amber-soft:#4b3424;--white:#fff;--shadow:0 18px 48px rgba(0,0,0,.24)
+    }
+    *{box-sizing:border-box}
+    html{min-width:0;background:var(--bg)}
+    body{margin:0;min-width:0;overflow-x:hidden;background:
+      radial-gradient(circle at 14% -10%,rgba(47,184,148,.13),transparent 34rem),
+      linear-gradient(180deg,#0a1717 0,var(--bg) 38rem);color:var(--text);
+      font-family:"Microsoft YaHei","Noto Sans CJK SC",Arial,sans-serif}
+    button,input,textarea{font:inherit}
+    button{cursor:pointer}
+    button:disabled,input:disabled,textarea:disabled{cursor:not-allowed;opacity:.48}
+    button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--amber);outline-offset:3px}
+    .topbar{min-height:72px;padding:14px clamp(16px,3vw,38px);display:flex;align-items:center;justify-content:space-between;gap:18px;border-bottom:1px solid var(--line);background:rgba(8,19,19,.9)}
+    .brand{font-size:21px;font-weight:900;letter-spacing:.2px}.brand span{color:var(--teal)}
+    .case-meta{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+    .tag{display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:5px 9px;border:1px solid var(--line-strong);border-radius:999px;background:var(--surface-2);color:var(--muted);font-size:11px;font-weight:800}
+    .tag strong{color:var(--text)}.tag.live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--teal)}
+    .shell{width:min(1580px,100%);margin:0 auto;padding:20px clamp(14px,2.5vw,34px) 34px}
+    .notice{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding:11px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--muted);font-size:12px}
+    .notice[hidden]{display:none}.notice.error{border-color:#8a5b34;background:var(--amber-soft);color:#ffe7cf}
+    .notice button{border:1px solid currentColor;border-radius:7px;padding:7px 10px;background:transparent;color:inherit;font-weight:800}
+    .workspace{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(320px,.8fr);gap:16px;align-items:stretch}
+    .lower-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(320px,.65fr);gap:16px;margin-top:16px;align-items:start}
+    .card{min-width:0;border:1px solid var(--line);border-radius:15px;background:linear-gradient(160deg,rgba(23,47,46,.98),rgba(12,29,28,.98));box-shadow:var(--shadow);overflow:hidden}
+    .card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:17px 19px;border-bottom:1px solid var(--line)}
+    .card-head h1,.card-head h2{margin:0}.card-head h1{font-size:clamp(20px,2.5vw,30px)}.card-head h2{font-size:17px}
+    .eyebrow{margin:0 0 5px;color:var(--teal);font-size:10px;font-weight:900;letter-spacing:1.8px;text-transform:uppercase}
+    .sub{margin:5px 0 0;color:var(--muted);font-size:12px;line-height:1.55}
+    .scene-card{display:flex;min-height:590px;flex-direction:column}
+    .scene-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line);background:rgba(5,15,15,.26)}
+    .visual-state{display:flex;align-items:center;gap:9px;min-width:0}.state-dot{width:9px;height:9px;flex:none;border-radius:50%;background:var(--teal);box-shadow:0 0 0 5px rgba(112,213,182,.1)}
+    .visual-state strong{font-size:12px}.visual-state span{display:block;margin-top:2px;color:var(--muted);font-size:10px}
+    .scene-controls{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap}
+    .control,.secondary,.primary,.evidence-button{min-height:38px;border-radius:8px;font-weight:800}
+    .control,.secondary{border:1px solid var(--line-strong);background:var(--surface-2);color:var(--text);padding:8px 11px}
+    .control:hover,.secondary:hover{border-color:var(--teal);background:var(--teal-soft)}
+    .primary{border:1px solid var(--teal-strong);background:var(--teal-strong);color:#05201a;padding:9px 14px}
+    .primary:hover{background:var(--teal)}
+    .scene-canvas{position:relative;min-height:360px;flex:1;overflow:hidden;background:
+      linear-gradient(rgba(112,213,182,.04) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(112,213,182,.04) 1px,transparent 1px),
+      radial-gradient(circle at 62% 35%,rgba(112,213,182,.09),transparent 18rem),#0a1a19;
+      background-size:32px 32px,32px 32px,auto,auto}
+    .scene-canvas svg{display:block;width:100%;height:100%;min-height:360px}
+    .scene-caption{position:absolute;left:16px;top:14px;max-width:65%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:rgba(8,19,19,.82);font-size:11px;color:var(--muted)}
+    .failure-callout{position:absolute;right:16px;top:14px;max-width:250px;padding:10px 12px;border:1px solid var(--amber);border-radius:9px;background:rgba(75,52,36,.92);color:#ffe6cd;font-size:12px;line-height:1.5;opacity:0;transform:translateY(-8px);transition:.28s ease}
+    .scene-canvas[data-visual-state="FAILURE_OBSERVED"] .failure-callout{opacity:1;transform:none}
+    .robot-motion{transform-box:fill-box;transform-origin:18% 72%;transition:transform 1.1s cubic-bezier(.2,.75,.2,1)}
+    .scene-canvas[data-visual-state="EXECUTING"] .robot-motion{transform:rotate(-4deg) translate(28px,-13px)}
+    .scene-canvas[data-visual-state="GRASP_ATTEMPT"] .robot-motion,.scene-canvas[data-visual-state="FAILURE_OBSERVED"] .robot-motion{transform:rotate(-7deg) translate(52px,-4px)}
+    .jaw{transition:transform .45s ease;transform-box:fill-box;transform-origin:center}
+    .scene-canvas[data-visual-state="GRASP_ATTEMPT"] .jaw.left,.scene-canvas[data-visual-state="FAILURE_OBSERVED"] .jaw.left{transform:translateX(7px)}
+    .scene-canvas[data-visual-state="GRASP_ATTEMPT"] .jaw.right,.scene-canvas[data-visual-state="FAILURE_OBSERVED"] .jaw.right{transform:translateX(-7px)}
+    .workpiece{transition:filter .25s ease}.scene-canvas[data-visual-state="FAILURE_OBSERVED"] .workpiece{filter:drop-shadow(0 0 12px rgba(242,171,103,.9))}
+    .gripper-halo,.measure-layer,.target-state{opacity:0;transition:opacity .25s ease}
+    .scene-canvas.has-e01 .gripper-halo,.scene-canvas.has-e02 .measure-layer,.scene-canvas.has-e03 .target-state{opacity:1}
+    .scene-canvas.has-e01 .gripper-halo{animation:halo 1.6s ease-in-out infinite}
+    .scene-canvas.target-conflict .target-zone{stroke:var(--amber)}
+    .scene-canvas.motion-paused *{animation-play-state:paused!important}
+    @keyframes halo{50%{opacity:.45;transform:scale(1.07)}}
+    .observation-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:14px 18px;border-top:1px solid var(--line);background:rgba(5,15,15,.2)}
+    .observation{min-width:0;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:var(--surface);font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+    .observation::before{content:"✓";margin-right:6px;color:var(--teal);font-weight:900}.observation.alert::before{content:"!";color:var(--amber)}
+    .tutor-card{display:flex;min-height:590px;flex-direction:column}
+    .chat{height:252px;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:rgba(5,15,15,.2)}
+    .bubble{max-width:92%;padding:10px 12px;border-radius:11px;font-size:12px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
+    .bubble.tutor{align-self:flex-start;border:1px solid var(--line);background:var(--teal-soft)}.bubble.user{align-self:flex-end;background:#226b5b;color:var(--white)}
+    .who{margin-bottom:3px;font-size:9px;font-weight:900;letter-spacing:1px;opacity:.68}
+    .quick-prompts{display:flex;gap:6px;flex-wrap:wrap;padding:10px 15px 3px;border-top:1px solid var(--line)}
+    .prompt{min-height:32px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--teal);padding:5px 9px;font-size:10px}
+    .compose{display:flex;gap:7px;padding:10px 15px 14px}.compose input{flex:1;min-width:0}
+    input,textarea{width:100%;border:1px solid var(--line-strong);border-radius:8px;background:#0a1918;color:var(--text);padding:9px 10px;outline:none}
+    input::placeholder,textarea::placeholder{color:#6f8984}textarea{min-height:60px;resize:vertical;line-height:1.5}
+    .diagnostic-tools{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line)}
+    .tool{min-width:0;padding:13px 15px}.tool+.tool{border-left:1px solid var(--line)}
+    .tool label{display:block;margin-bottom:7px;color:var(--teal);font-size:10px;font-weight:900;letter-spacing:1px}
+    .tool .primary{width:100%;margin-top:7px}.current{margin-top:7px;padding:8px;border-radius:7px;background:var(--surface);color:var(--muted);font-size:10px;line-height:1.5;overflow-wrap:anywhere}
+    .result{margin-top:8px;padding:10px;border:1px solid var(--teal-strong);border-radius:8px;background:var(--teal-soft);font-size:10px;line-height:1.55}.result strong{color:var(--teal)}
+    .evidence-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:16px 18px 18px}
+    .evidence-item{min-width:0;border:1px solid var(--line);border-radius:11px;background:rgba(7,20,19,.65);overflow:hidden}
+    .evidence-button{width:100%;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;border:0;background:transparent;color:var(--text);padding:12px;text-align:left}
+    .evidence-button:hover{background:var(--teal-soft)}.evidence-button strong{display:block;color:var(--teal);font-size:12px}.evidence-button small{display:block;margin-top:3px;color:var(--muted);font-size:10px}
+    .evidence-pill{flex:none;padding:4px 7px;border-radius:999px;background:var(--surface-2);color:var(--muted);font-size:9px}.evidence-item.open{border-color:var(--teal-strong)}.evidence-item.open .evidence-pill{background:var(--teal-soft);color:var(--teal)}
+    .evidence-data{margin:0 10px 11px;padding:9px;border-top:1px solid var(--line);font-size:10px;color:var(--muted)}
+    .data-row{display:flex;justify-content:space-between;gap:8px;padding:3px 0}.data-row span:last-child{color:var(--text);font-weight:700;text-align:right;overflow-wrap:anywhere}
+    .journey{max-height:355px;overflow:auto;padding:15px 18px 18px}.journey-empty{margin:0;color:var(--muted);font-size:11px}
+    .journey-event{position:relative;margin-left:6px;padding:0 0 15px 19px;border-left:1px solid var(--line-strong)}.journey-event:last-child{padding-bottom:0}
+    .journey-event::before{content:"";position:absolute;left:-5px;top:2px;width:9px;height:9px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 4px var(--surface-2)}
+    .journey-event.denied::before{background:var(--amber)}.journey-event b{display:block;font-size:11px}.journey-event p{margin:3px 0 0;color:var(--muted);font-size:10px;line-height:1.45;overflow-wrap:anywhere}.journey-event time{display:block;margin-top:3px;color:#6f8984;font-size:9px}
+    .footer{padding:22px 4px 0;color:#708984;text-align:center;font-size:10px;line-height:1.5}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    body[data-busy="true"] .session-command{pointer-events:none}
+    @media(max-width:1040px){
+      .workspace,.lower-grid{grid-template-columns:1fr}.scene-card,.tutor-card{min-height:auto}.scene-canvas,.scene-canvas svg{min-height:330px}.tutor-card{order:2}
+      .chat{height:285px}
+    }
+    @media(max-width:700px){
+      .topbar{align-items:flex-start;flex-direction:column}.case-meta{justify-content:flex-start}
+      .scene-toolbar{align-items:flex-start;flex-direction:column}.scene-controls{justify-content:flex-start}
+      .observation-strip{grid-template-columns:1fr 1fr}.evidence-grid{grid-template-columns:1fr}
+      .diagnostic-tools{grid-template-columns:1fr}.tool+.tool{border-left:0;border-top:1px solid var(--line)}
+      .scene-caption{max-width:calc(100% - 32px)}.failure-callout{left:16px;right:16px;top:auto;bottom:14px;max-width:none}
+    }
+    @media(max-width:430px){
+      .shell{padding:12px 10px 24px}.card-head{padding:14px}.scene-toolbar{padding:10px 12px}
+      .scene-controls{display:grid;grid-template-columns:1fr 1fr;width:100%}.control{width:100%;padding:7px 8px;font-size:11px}
+      .scene-canvas,.scene-canvas svg{min-height:300px}.observation-strip{grid-template-columns:1fr;padding:11px 12px}
+      .compose{align-items:stretch;flex-direction:column}.compose .primary{width:100%}.card{border-radius:12px}
+    }
+    @media(prefers-reduced-motion:reduce){
+      *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+    }
   </style>
 </head>
-<body>
-<header><div class="brand">SimTrouble <span>Tutor</span></div><div class="topmeta"><b>ST-001 · 工业机器人柔性搬运</b> &nbsp;/&nbsp; 本地初版 Demo</div></header>
-<div class="banner">Demo v0.1 · 复用 Phase 3 官方 Core 与 Trace · 规则 Tutor 和诊断判定仅限 ST-001；未实现在线大模型、正式评分或物理仿真</div>
-<main>
-  <div class="hero"><div><div class="eyebrow">DIAGNOSTIC TRAINING</div><h1>从现象出发，找到抓取失败的原因</h1><p class="sub">观察现象 → 选择检查 → 提出假设 → 向 Tutor 提问 → 提交 Demo-only 诊断</p></div><button class="reset" id="reset">↻ 重新开始</button></div>
-  <div class="layout">
-    <div class="card">
-      <div class="scene"><svg viewBox="0 0 520 250" role="img" aria-label="工业机器人柔性搬运场景示意"><defs><pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M30 0H0V30" fill="none" stroke="#b6d3cd"/></pattern></defs><rect width="520" height="250" fill="url(#grid)"/><path d="M0 186h520" stroke="#87aea5" stroke-width="2"/><rect x="30" y="187" width="460" height="42" rx="8" fill="#b7ccc7"/><rect x="47" y="160" width="92" height="27" rx="5" fill="#547f79"/><path d="M92 157l33-47 45 20 39-50" fill="none" stroke="#216e68" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/><circle cx="125" cy="110" r="12" fill="#173e3c"/><circle cx="170" cy="130" r="12" fill="#173e3c"/><circle cx="209" cy="80" r="11" fill="#173e3c"/><path d="m211 82 25 18m-4 0 20-12m-20 12 8 23" stroke="#174742" stroke-width="8" stroke-linecap="round"/><rect x="287" y="161" width="48" height="25" rx="4" fill="#de8a54"/><rect x="393" y="154" width="78" height="33" rx="5" fill="none" stroke="#2a8179" stroke-width="3" stroke-dasharray="6 4"/><text x="288" y="144" font-size="13" fill="#245d58">工件</text><text x="399" y="143" font-size="13" fill="#245d58">目标区</text></svg><div class="scene-caption">场景示意 · 非物理仿真画面</div></div>
-      <div class="cardbody"><span class="label">当前可观察现象</span><div class="observations"><div class="obs"><b>机械臂</b>动作已完成</div><div class="obs"><b>夹爪</b>闭合命令已执行</div><div class="obs"><b>碰撞</b>未检测到</div><div class="obs alert"><b>异常</b>工件未被带走</div></div><span class="label">可选检查 · 由 Core 释放证据</span><div class="evidence" id="evidence"></div></div>
+<body data-busy="false">
+  <header class="topbar">
+    <div class="brand">SimTrouble <span>Tutor</span></div>
+    <div class="case-meta" aria-label="演示模式">
+      <span class="tag"><strong id="case-id">ST-001</strong></span>
+      <span class="tag live">本地 Demo</span>
+      <span class="tag">视觉演绎</span>
+      <span class="tag">规则 Tutor</span>
+      <span class="tag">Demo-only</span>
+      <button class="secondary session-command" id="reset-session" type="button">重新开始会话</button>
     </div>
-    <div class="card">
-      <div class="chat-head"><h2>Tutor 对话</h2><span class="status">确定性规则模式</span></div><div class="chat" id="chat"></div>
-      <div class="prompts"><button class="prompt" data-prompt="机械臂动作完成、夹爪闭合，但工件没有被带走。我应该先检查什么？">从哪里检查？</button><button class="prompt" data-prompt="E01 显示夹爪已闭合但没有夹住工件，这能说明什么？">解释 E01</button><button class="prompt" data-prompt="E02 显示工件 X 方向偏移 70 毫米，我该如何调整判断？">解释 E02</button></div>
-      <form class="compose" id="chat-form"><input id="question" maxlength="500" aria-label="向 Tutor 提问" placeholder="输入你的观察、疑问或证据判断…"><button class="primary">发送</button></form>
+  </header>
+
+  <main class="shell">
+    <div class="notice" id="notice" role="status" aria-live="polite" hidden>
+      <span id="notice-text"></span>
+      <button id="retry" type="button" hidden>重试</button>
     </div>
-    <div class="card right">
-      <div><div class="section"><span class="label">你的诊断假设</span><p class="small">先写出可检验的解释，获得证据后可以修改。</p><textarea class="field" id="hypothesis" maxlength="500" placeholder="例如：我怀疑……，准备检查……"></textarea><button class="primary full" id="save-hypothesis">保存假设</button><div class="current" id="current-hypothesis">尚未提出假设</div></div><div class="section"><span class="label">提交 Demo-only 诊断</span><p class="small">该结果只用于 ST-001 初版演示，不是正式评分。</p><textarea class="field" id="diagnosis" maxlength="500" placeholder="我的诊断是……；依据为……"></textarea><button class="primary full" id="submit-diagnosis">提交并查看结果</button><div id="result" style="margin-top:10px"></div></div></div>
-      <div class="section"><span class="label">权威 Core Trace</span><p class="small">由 Phase 3 Session Trace 生成；页面不维护第二份事件事实。</p><div class="timeline" id="timeline"></div></div>
+
+    <div class="workspace">
+      <section class="card scene-card" aria-labelledby="scene-title">
+        <div class="card-head">
+          <div>
+            <p class="eyebrow">Industrial Training Workspace</p>
+            <h1 id="scene-title">工业机器人柔性搬运工作站</h1>
+            <p class="sub">目标：观察抓取失败现象，通过受控证据修正判断。</p>
+          </div>
+          <span class="tag">Core 阶段：<strong id="core-stage">—</strong></span>
+        </div>
+        <div class="scene-toolbar">
+          <div class="visual-state">
+            <span class="state-dot" aria-hidden="true"></span>
+            <div><strong id="visual-state-label">准备就绪</strong><span>视觉状态，不修改 Core Session</span></div>
+          </div>
+          <div class="scene-controls" aria-label="视觉演绎控制">
+            <button class="control" id="visual-start" type="button">开始演绎</button>
+            <button class="control" id="visual-replay" type="button">重播</button>
+            <button class="control" id="visual-skip" type="button">跳过动画</button>
+            <button class="control" id="visual-reset" type="button">视觉重置</button>
+          </div>
+        </div>
+        <div class="scene-canvas" id="scene-canvas" data-visual-state="READY">
+          <div class="scene-caption">预设状态演绎 · 非物理仿真 · 不代表真实机器人遥测</div>
+          <div class="failure-callout" role="status"><strong>抓取未成功</strong><br>夹爪闭合后，工件没有随末端移动。这是可观察现象，不是根因。</div>
+          <svg viewBox="0 0 900 430" role="img" aria-label="工业机器人尝试抓取工件的视觉演绎">
+            <defs>
+              <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d3c39"/><stop offset="1" stop-color="#102523"/></linearGradient>
+            </defs>
+            <path d="M45 330H855L810 400H90Z" fill="url(#floor)" stroke="#2a4946" stroke-width="2"/>
+            <path d="M110 355H790M145 380H755M190 330L170 400M300 330L290 400M410 330L405 400M520 330L520 400M630 330L635 400M740 330L750 400" stroke="#31514e" stroke-width="1"/>
+            <g class="robot-motion">
+              <rect x="105" y="286" width="120" height="47" rx="9" fill="#274c48" stroke="#70d5b6"/>
+              <circle cx="165" cy="278" r="27" fill="#102c29" stroke="#70d5b6" stroke-width="5"/>
+              <path d="M165 274L240 196L326 224L402 151" fill="none" stroke="#3c8177" stroke-width="31" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M165 274L240 196L326 224L402 151" fill="none" stroke="#70d5b6" stroke-opacity=".45" stroke-width="4" stroke-linecap="round"/>
+              <circle cx="240" cy="196" r="20" fill="#112c29" stroke="#70d5b6" stroke-width="4"/>
+              <circle cx="326" cy="224" r="20" fill="#112c29" stroke="#70d5b6" stroke-width="4"/>
+              <circle cx="402" cy="151" r="18" fill="#112c29" stroke="#70d5b6" stroke-width="4"/>
+              <path d="M414 163L454 204" stroke="#3c8177" stroke-width="24" stroke-linecap="round"/>
+              <g class="gripper" transform="translate(456 205)">
+                <circle class="gripper-halo" cx="0" cy="0" r="45" fill="none" stroke="#70d5b6" stroke-width="5" transform-origin="0 0"/>
+                <rect x="-15" y="-15" width="30" height="31" rx="5" fill="#70d5b6"/>
+                <path class="jaw left" d="M-9 14V48H5" fill="none" stroke="#b8eadd" stroke-width="8" stroke-linecap="round"/>
+                <path class="jaw right" d="M9 14V48H-5" fill="none" stroke="#b8eadd" stroke-width="8" stroke-linecap="round"/>
+              </g>
+            </g>
+            <g class="workpiece">
+              <rect x="531" y="286" width="74" height="43" rx="7" fill="#f2ab67" stroke="#ffe1bf" stroke-width="2"/>
+              <text x="568" y="313" text-anchor="middle" fill="#2b1b0f" font-size="13" font-weight="800">工件</text>
+            </g>
+            <g class="measure-layer">
+              <path d="M494 275V335M568 275V335M494 286H568" fill="none" stroke="#f2ab67" stroke-width="2" stroke-dasharray="6 4"/>
+              <path d="M500 281L494 286L500 291M562 281L568 286L562 291" fill="none" stroke="#f2ab67" stroke-width="2"/>
+              <circle cx="494" cy="307" r="6" fill="#70d5b6"/><circle cx="568" cy="307" r="6" fill="#f2ab67"/>
+              <text id="e02-label" x="531" y="266" text-anchor="middle" fill="#ffe1bf" font-size="14" font-weight="800"></text>
+            </g>
+            <g>
+              <rect class="target-zone" x="700" y="268" width="112" height="62" rx="8" fill="none" stroke="#4d7772" stroke-width="3" stroke-dasharray="8 5"/>
+              <text x="756" y="355" text-anchor="middle" fill="#9bb4af" font-size="13">目标区</text>
+              <text class="target-state" id="target-state-label" x="756" y="290" text-anchor="middle" fill="#70d5b6" font-size="11" font-weight="800"></text>
+            </g>
+          </svg>
+        </div>
+        <div class="observation-strip" id="observations" aria-label="当前公开观察"></div>
+      </section>
+
+      <aside class="card tutor-card" aria-labelledby="tutor-title">
+        <div class="card-head">
+          <div><p class="eyebrow">Diagnostic Coach</p><h2 id="tutor-title">AI 诊断教练</h2><p class="sub">确定性规则引导，不接触隐藏 Case 字段。</p></div>
+          <span class="tag live">规则模式</span>
+        </div>
+        <div class="chat" id="chat" aria-live="polite"></div>
+        <div class="quick-prompts">
+          <button class="prompt session-command" type="button" data-prompt="机械臂动作完成、夹爪闭合，但工件没有被带走。我应该先检查什么？">从哪里检查？</button>
+          <button class="prompt session-command" type="button" data-prompt="E01 能帮助我区分哪些现象？">如何使用 E01？</button>
+          <button class="prompt session-command" type="button" data-prompt="E02 可以怎样帮助我判断工件位置？">如何使用 E02？</button>
+        </div>
+        <form class="compose" id="chat-form">
+          <label class="sr-only" for="question">向 Tutor 提问</label>
+          <input class="session-command" id="question" maxlength="500" aria-label="向 Tutor 提问" placeholder="输入观察、疑问或证据判断…">
+          <button class="primary session-command" type="submit">发送</button>
+        </form>
+        <div class="diagnostic-tools">
+          <div class="tool">
+            <label for="hypothesis">诊断假设</label>
+            <textarea class="session-command" id="hypothesis" maxlength="500" placeholder="我怀疑……，准备检查……"></textarea>
+            <button class="primary session-command" id="save-hypothesis" type="button">保存 / 修正假设</button>
+            <div class="current" id="current-hypothesis">尚未提出假设</div>
+          </div>
+          <div class="tool">
+            <label for="diagnosis">提交 Demo-only 诊断</label>
+            <textarea class="session-command" id="diagnosis" maxlength="500" placeholder="结论与公开证据依据…"></textarea>
+            <button class="primary session-command" id="submit-diagnosis" type="button">提交诊断</button>
+            <div id="result"></div>
+          </div>
+        </div>
+      </aside>
     </div>
-  </div>
-  <div class="foot">SimTrouble Tutor · Demo v0.1 · ST-001 单案例 · 会话仅保存在当前进程内</div>
-</main><div id="toast"></div>
-<script>
-const names={E01:'夹爪状态',E02:'工件位置',E03:'目标区状态'};
-const formatEvidence=e=>Object.entries(e.content).map(([k,v])=>`${k}: ${v}`).join('\n');
-const escapeHtml=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let state;
-async function api(path,payload){
-  const options={method:payload===undefined?'GET':'POST',headers:{'Content-Type':'application/json'}};
-  if(payload!==undefined)options.body=JSON.stringify(payload);
-  const response=await fetch(path,options);const value=await response.json();
-  if(!response.ok)throw Error(value.error||'请求失败');return value;
-}
-function toast(text){const el=document.getElementById('toast');el.textContent=text;el.style.display='block';setTimeout(()=>el.style.display='none',3000)}
-function traceDetail(event){
-  if(event.evidence_id)return event.evidence_id;
-  if(event.current_hypothesis&&event.action_type.startsWith('Hypothesis'))return event.current_hypothesis;
-  return event.result&&event.result.status?event.result.status:event.stage;
-}
-function render(s){
-  state=s;
-  document.getElementById('evidence').innerHTML=s.case.evidence_options.map(option=>{const item=s.released.find(value=>value.id===option.id);return `<div><button class="ev ${item?'open':''}" data-id="${option.id}" ${s.diagnosis?'disabled':''}><span><strong>${option.id}</strong>　${names[option.id]||escapeHtml(option.type)}<small>${escapeHtml(option.type)}</small></span><span class="pill">${item?'已开放':'点击检查'}</span></button>${item?`<pre class="data">${escapeHtml(formatEvidence(item))}</pre>`:''}</div>`}).join('');
-  const greeting='<div class="bubble tutor"><div class="who">TUTOR · 规则引导</div>请先提出一个可检验的假设，再选择检查项。我只会依据已经开放的证据帮助你推理。</div>';
-  document.getElementById('chat').innerHTML=greeting+s.messages.map(message=>`<div class="bubble ${message.role}"><div class="who">${message.role==='user'?'你':'TUTOR · 规则引导'}</div>${escapeHtml(message.text)}</div>`).join('');
-  const chat=document.getElementById('chat');chat.scrollTop=chat.scrollHeight;
-  document.getElementById('current-hypothesis').textContent=s.session.current_hypothesis||'尚未提出假设';
-  document.getElementById('timeline').innerHTML=s.trace.length?s.trace.map((event,index)=>`<div class="event"><b>${String(index+1).padStart(2,'0')} ${escapeHtml(event.action_type)}</b><span>${escapeHtml(traceDetail(event))}</span></div>`).join(''):'<p class="small">尚无 Trace</p>';
-  document.getElementById('result').innerHTML=s.diagnosis?`<div class="result"><strong>${s.diagnosis.correct?'与 Demo 参考判定一致':'与 Demo 参考判定不一致'}</strong><br>模式：${escapeHtml(s.diagnosis.mode)}<br>提交：${escapeHtml(s.diagnosis.submitted)}<br>参考解释：${escapeHtml(s.diagnosis.reference)}<br>已检查：${escapeHtml(s.diagnosis.evidence_used.join('、')||'无')}<br><small>${escapeHtml(s.diagnosis.note)}</small></div>`:'';
-  ['submit-diagnosis','save-hypothesis','question','hypothesis','diagnosis'].forEach(id=>document.getElementById(id).disabled=!!s.diagnosis);
-}
-async function run(path,payload){try{render(await api(path,payload))}catch(error){toast(error.message)}}
-document.getElementById('evidence').addEventListener('click',event=>{const button=event.target.closest('button[data-id]');if(button)run('/api/evidence',{id:button.dataset.id})});
-document.getElementById('save-hypothesis').onclick=()=>run('/api/hypothesis',{text:document.getElementById('hypothesis').value});
-document.getElementById('submit-diagnosis').onclick=()=>run('/api/diagnose',{text:document.getElementById('diagnosis').value});
-document.getElementById('chat-form').onsubmit=event=>{event.preventDefault();const input=document.getElementById('question');const text=input.value.trim();if(!text)return;input.value='';run('/api/chat',{text})};
-document.querySelectorAll('[data-prompt]').forEach(button=>button.onclick=()=>{document.getElementById('question').value=button.dataset.prompt;document.getElementById('question').focus()});
-document.getElementById('reset').onclick=async()=>{if(confirm('重新开始本轮 ST-001 训练？')){document.getElementById('hypothesis').value='';document.getElementById('diagnosis').value='';await run('/api/reset',{})}};
-run('/api/state');
-</script>
+
+    <div class="lower-grid">
+      <section class="card" aria-labelledby="evidence-title">
+        <div class="card-head">
+          <div><p class="eyebrow">Evidence Lab</p><h2 id="evidence-title">证据实验台</h2><p class="sub">检查顺序自由；具体内容仅在 Core 释放后显示。</p></div>
+          <span class="tag" id="evidence-count">已开放 0 / 0</span>
+        </div>
+        <div class="evidence-grid" id="evidence"></div>
+      </section>
+
+      <section class="card" aria-labelledby="journey-title">
+        <div class="card-head">
+          <div><p class="eyebrow">Diagnostic Journey</p><h2 id="journey-title">当前会话操作记录</h2><p class="sub">来自现有 Core Trace；不代表持久化档案或完整状态推进。</p></div>
+        </div>
+        <div class="journey" id="journey"></div>
+      </section>
+    </div>
+    <div class="footer">ST-001 单案例 · 进程内匿名会话 · 无五维评分、在线 LLM 或物理仿真</div>
+  </main>
+
+  <script>
+  const evidenceNames = { E01: '夹爪状态', E02: '工件位置', E03: '目标区状态' };
+  const observationNames = {
+    robot_motion_completed: '机械臂动作已完成',
+    gripper_command_executed: '夹爪闭合指令已执行',
+    no_collision: '未观察到碰撞',
+    grasp_failed: '抓取未成功'
+  };
+  const fieldNames = {
+    command: '指令', state: '状态', holding_object: '持有工件',
+    axis: '轴向', expected_mm: '期望位置', actual_mm: '实际位置',
+    offset_mm: '偏移量', target_available: '目标区可用',
+    target_conflict: '目标区冲突'
+  };
+  const eventNames = {
+    SessionStarted: '会话开始',
+    EvidenceRequested: '请求证据',
+    EvidenceReleased: '证据已开放',
+    EvidenceDenied: '证据请求被拒绝',
+    HypothesisAdded: '提出假设',
+    HypothesisUpdated: '修正假设',
+    ActionPerformed: '执行学习操作'
+  };
+  const visualLabels = {
+    READY: '准备就绪',
+    EXECUTING: '机械臂执行中',
+    GRASP_ATTEMPT: '夹爪尝试抓取',
+    FAILURE_OBSERVED: '观察到抓取未成功'
+  };
+  const visualStates = Object.keys(visualLabels);
+  const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[character]);
+  const displayValue = (key, value) => {
+    if (typeof value === 'boolean') return value ? '是' : '否';
+    if (value === null || value === undefined) return '—';
+    if (key.endsWith('_mm')) return String(value) + ' mm';
+    if (key === 'axis') return String(value).toUpperCase();
+    const words = { close: '闭合', closed: '已闭合' };
+    return words[value] || String(value);
+  };
+
+  let state = null;
+  let retryAction = null;
+  let busy = false;
+  const notice = document.getElementById('notice');
+  const noticeText = document.getElementById('notice-text');
+  const retryButton = document.getElementById('retry');
+
+  function showNotice(text, kind, retry) {
+    notice.hidden = false;
+    notice.classList.toggle('error', kind === 'error');
+    noticeText.textContent = text;
+    retryAction = retry || null;
+    retryButton.hidden = !retryAction;
+  }
+
+  function clearNotice() {
+    notice.hidden = true;
+    notice.classList.remove('error');
+    retryButton.hidden = true;
+    retryAction = null;
+  }
+
+  function setBusy(value) {
+    busy = value;
+    document.body.dataset.busy = String(value);
+    document.querySelectorAll('.session-command').forEach(element => {
+      const lockedByDiagnosis = Boolean(
+        state && state.diagnosis && element.id !== 'reset-session'
+      );
+      element.disabled = value || lockedByDiagnosis;
+    });
+  }
+
+  async function api(path, payload) {
+    const options = {
+      method: payload === undefined ? 'GET' : 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    };
+    if (payload !== undefined) options.body = JSON.stringify(payload);
+    const response = await fetch(path, options);
+    let value;
+    try {
+      value = await response.json();
+    } catch (error) {
+      throw new Error('服务返回了无法读取的响应');
+    }
+    if (!response.ok) throw new Error(value.error || '请求失败');
+    return value;
+  }
+
+  async function request(path, payload, successText) {
+    if (busy) return;
+    const repeat = () => request(path, payload, successText);
+    setBusy(true);
+    clearNotice();
+    try {
+      render(await api(path, payload));
+      if (successText) showNotice(successText, 'status');
+      return true;
+    } catch (error) {
+      showNotice(error.message || '请求失败，请重试', 'error', repeat);
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const visualFlow = (() => {
+    let index = 0;
+    let timer = null;
+    let paused = false;
+    const canvas = document.getElementById('scene-canvas');
+    const label = document.getElementById('visual-state-label');
+    const startButton = document.getElementById('visual-start');
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    function paint() {
+      const name = visualStates[index];
+      canvas.dataset.visualState = name;
+      canvas.classList.toggle('motion-paused', paused);
+      label.textContent = visualLabels[name];
+      if (paused) {
+        startButton.textContent = '继续演绎';
+      } else if (index === visualStates.length - 1) {
+        startButton.textContent = '重新演绎';
+      } else if (timer) {
+        startButton.textContent = '暂停演绎';
+      } else {
+        startButton.textContent = index === 0 ? '开始演绎' : '继续演绎';
+      }
+    }
+
+    function schedule() {
+      clearTimeout(timer);
+      if (index >= visualStates.length - 1 || paused) {
+        timer = null;
+        paint();
+        return;
+      }
+      const delay = reducedMotion.matches ? 220 : 1450;
+      timer = setTimeout(() => {
+        index += 1;
+        timer = null;
+        paint();
+        schedule();
+      }, delay);
+      paint();
+    }
+
+    function start() {
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+        paused = true;
+        paint();
+        return;
+      }
+      if (index >= visualStates.length - 1) index = 0;
+      paused = false;
+      if (index === 0) index = 1;
+      schedule();
+    }
+
+    function replay() {
+      clearTimeout(timer);
+      timer = null;
+      index = 0;
+      paused = false;
+      paint();
+      start();
+    }
+
+    function skip() {
+      clearTimeout(timer);
+      timer = null;
+      paused = false;
+      index = visualStates.length - 1;
+      paint();
+    }
+
+    function reset() {
+      clearTimeout(timer);
+      timer = null;
+      paused = false;
+      index = 0;
+      paint();
+    }
+
+    paint();
+    return { start, replay, skip, reset };
+  })();
+
+  function renderScene(nextState) {
+    const canvas = document.getElementById('scene-canvas');
+    const released = Object.fromEntries(nextState.released.map(item => [item.id, item]));
+    const e01 = released.E01;
+    const e02 = released.E02;
+    const e03 = released.E03;
+
+    canvas.classList.toggle('has-e01', Boolean(e01));
+    canvas.classList.toggle('has-e02', Boolean(e02));
+    canvas.classList.toggle('has-e03', Boolean(e03));
+    canvas.classList.toggle(
+      'target-conflict',
+      Boolean(e03 && e03.content.target_conflict)
+    );
+
+    document.getElementById('e02-label').textContent = e02
+      ? '实际 ' + displayValue('actual_mm', e02.content.actual_mm)
+        + ' · 偏移 ' + displayValue('offset_mm', e02.content.offset_mm)
+      : '';
+    document.getElementById('target-state-label').textContent = e03
+      ? (e03.content.target_available ? '可用' : '不可用')
+        + (e03.content.target_conflict ? ' · 存在冲突' : ' · 无冲突')
+      : '';
+
+    const observations = nextState.case.initial_observation || [];
+    document.getElementById('observations').innerHTML = observations.map(item =>
+      '<div class="observation ' + (item === 'grasp_failed' ? 'alert' : '') + '">'
+      + escapeHtml(observationNames[item] || item) + '</div>'
+    ).join('');
+  }
+
+  function renderEvidence(nextState) {
+    const released = Object.fromEntries(nextState.released.map(item => [item.id, item]));
+    const options = nextState.case.evidence_options || [];
+    document.getElementById('evidence-count').textContent =
+      '已开放 ' + nextState.released.length + ' / ' + options.length;
+    document.getElementById('evidence').innerHTML = options.map(option => {
+      const item = released[option.id];
+      const rows = item ? Object.entries(item.content).map(([key, value]) =>
+        '<div class="data-row"><span>' + escapeHtml(fieldNames[key] || key)
+        + '</span><span>' + escapeHtml(displayValue(key, value)) + '</span></div>'
+      ).join('') : '';
+      return '<article class="evidence-item ' + (item ? 'open' : '') + '">'
+        + '<button class="evidence-button session-command" type="button" data-id="'
+        + escapeHtml(option.id) + '" ' + (nextState.diagnosis ? 'disabled' : '') + '>'
+        + '<span><strong>' + escapeHtml(option.id) + ' · '
+        + escapeHtml(evidenceNames[option.id] || option.type)
+        + '</strong><small>' + escapeHtml(option.type) + '</small></span>'
+        + '<span class="evidence-pill">' + (item ? '已开放' : '点击检查') + '</span>'
+        + '</button>' + (item ? '<div class="evidence-data">' + rows + '</div>' : '')
+        + '</article>';
+    }).join('');
+  }
+
+  function renderChat(nextState) {
+    const greeting = '<div class="bubble tutor"><div class="who">TUTOR · 规则引导</div>'
+      + '先提出一个可检验的假设，再选择检查项。我只依据已经开放的证据帮助你推理。</div>';
+    document.getElementById('chat').innerHTML = greeting + nextState.messages.map(message =>
+      '<div class="bubble ' + escapeHtml(message.role) + '"><div class="who">'
+      + (message.role === 'user' ? '你' : 'TUTOR · 规则引导')
+      + '</div>' + escapeHtml(message.text) + '</div>'
+    ).join('');
+    const chat = document.getElementById('chat');
+    chat.scrollTop = chat.scrollHeight;
+    document.getElementById('current-hypothesis').textContent =
+      nextState.session.current_hypothesis || '尚未提出假设';
+  }
+
+  function eventDetail(event) {
+    if (event.evidence_id) {
+      return event.evidence_id + ' · '
+        + (evidenceNames[event.evidence_id] || '证据项');
+    }
+    if (
+      event.current_hypothesis
+      && (event.action_type === 'HypothesisAdded'
+        || event.action_type === 'HypothesisUpdated'
+        || event.action_type === 'HypothesisRejected')
+    ) {
+      return event.current_hypothesis;
+    }
+    if (event.action_type === 'ActionPerformed') {
+      return 'Core 已记录学习操作；当前 Trace 未公开更细的操作分类';
+    }
+    if (event.result && typeof event.result === 'object') {
+      const parts = Object.entries(event.result).map(([key, value]) =>
+        key + ': ' + String(value)
+      );
+      if (parts.length) return parts.join(' · ');
+    }
+    return '阶段：' + event.stage;
+  }
+
+  function renderJourney(nextState) {
+    const journey = document.getElementById('journey');
+    if (!nextState.trace.length) {
+      journey.innerHTML = '<p class="journey-empty">Core 尚未记录 Trace。</p>';
+      return;
+    }
+    journey.innerHTML = nextState.trace.map((event, index) => {
+      const time = new Date(event.timestamp);
+      const timeText = Number.isNaN(time.getTime())
+        ? event.timestamp
+        : time.toLocaleTimeString('zh-CN', { hour12: false });
+      const denied = String(event.action_type).includes('Denied')
+        || String(event.action_type).includes('Rejected');
+      return '<article class="journey-event ' + (denied ? 'denied' : '') + '">'
+        + '<b>' + String(index + 1).padStart(2, '0') + ' · '
+        + escapeHtml(eventNames[event.action_type] || event.action_type) + '</b>'
+        + '<p>' + escapeHtml(eventDetail(event)) + '</p>'
+        + '<time datetime="' + escapeHtml(event.timestamp) + '">'
+        + escapeHtml(timeText) + ' · Core ' + escapeHtml(event.stage) + '</time>'
+        + '</article>';
+    }).join('');
+  }
+
+  function renderDiagnosis(nextState) {
+    const result = document.getElementById('result');
+    if (!nextState.diagnosis) {
+      result.innerHTML = '';
+      return;
+    }
+    const diagnosis = nextState.diagnosis;
+    result.innerHTML = '<div class="result"><strong>'
+      + (diagnosis.correct ? '与 Demo 参考判定一致' : '与 Demo 参考判定不一致')
+      + '</strong><br>模式：' + escapeHtml(diagnosis.mode)
+      + '<br>提交：' + escapeHtml(diagnosis.submitted)
+      + '<br>参考解释：' + escapeHtml(diagnosis.reference)
+      + '<br>已检查：' + escapeHtml(diagnosis.evidence_used.join('、') || '无')
+      + '<br><small>' + escapeHtml(diagnosis.note) + '</small></div>';
+  }
+
+  function render(nextState) {
+    state = nextState;
+    document.getElementById('case-id').textContent = nextState.case.case_id;
+    document.getElementById('core-stage').textContent =
+      nextState.session.current_stage;
+    renderScene(nextState);
+    renderEvidence(nextState);
+    renderChat(nextState);
+    renderJourney(nextState);
+    renderDiagnosis(nextState);
+    setBusy(false);
+  }
+
+  retryButton.addEventListener('click', () => {
+    const action = retryAction;
+    if (action) action();
+  });
+  document.getElementById('visual-start').addEventListener('click', visualFlow.start);
+  document.getElementById('visual-replay').addEventListener('click', visualFlow.replay);
+  document.getElementById('visual-skip').addEventListener('click', visualFlow.skip);
+  document.getElementById('visual-reset').addEventListener('click', visualFlow.reset);
+
+  document.getElementById('evidence').addEventListener('click', event => {
+    const button = event.target.closest('button[data-id]');
+    if (button) {
+      request('/api/evidence', { id: button.dataset.id }, button.dataset.id + ' 已开放');
+    }
+  });
+
+  document.getElementById('save-hypothesis').addEventListener('click', async () => {
+    const input = document.getElementById('hypothesis');
+    const saved = await request('/api/hypothesis', { text: input.value }, '假设已记录');
+    if (saved) input.value = '';
+  });
+
+  document.getElementById('submit-diagnosis').addEventListener('click', () => {
+    const input = document.getElementById('diagnosis');
+    request('/api/diagnose', { text: input.value });
+  });
+
+  document.getElementById('chat-form').addEventListener('submit', async event => {
+    event.preventDefault();
+    const input = document.getElementById('question');
+    const text = input.value.trim();
+    if (!text) {
+      showNotice('问题不能为空', 'error');
+      input.focus();
+      return;
+    }
+    const sent = await request('/api/chat', { text });
+    if (sent) input.value = '';
+  });
+
+  document.querySelectorAll('[data-prompt]').forEach(button => {
+    button.addEventListener('click', () => {
+      const input = document.getElementById('question');
+      input.value = button.dataset.prompt;
+      input.focus();
+    });
+  });
+
+  document.getElementById('reset-session').addEventListener('click', async () => {
+    if (!window.confirm('重新开始本轮 ST-001 训练？')) return;
+    const reset = await request('/api/reset', {}, '已创建新的匿名演示会话');
+    if (reset) {
+      document.getElementById('hypothesis').value = '';
+      document.getElementById('diagnosis').value = '';
+      document.getElementById('question').value = '';
+      visualFlow.reset();
+    }
+  });
+
+  request('/api/state');
+  </script>
 </body>
 </html>
