@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://simtrouble.local/contracts/v0.4/training-report.schema.json",
+  "title": "TrainingReportV04",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "rubric_version",
+    "session_id",
+    "case_id",
+    "diagnosis",
+    "evidence_used",
+    "dimension_results",
+    "overall",
+    "feedback_summary",
+    "next_learning_step",
+    "tutor_mode"
+  ],
+  "properties": {
+    "contract_version": {"type": "string", "pattern": "^0\\.4\\.[0-9]+$"},
+    "rubric_version": {"type": "string", "minLength": 1},
+    "session_id": {"type": "string", "minLength": 1},
+    "case_id": {"type": "string", "pattern": "^ST-[0-9]{3}$"},
+    "diagnosis": {"$ref": "#/$defs/diagnosisReview"},
+    "evidence_used": {"type": "array", "items": {"type": "string"}},
+    "dimension_results": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hypothesis", "evidence", "efficiency", "updating", "safety"],
+      "properties": {
+        "hypothesis": {"$ref": "#/$defs/dimensionResult"},
+        "evidence": {"$ref": "#/$defs/dimensionResult"},
+        "efficiency": {"$ref": "#/$defs/dimensionResult"},
+        "updating": {"$ref": "#/$defs/dimensionResult"},
+        "safety": {"$ref": "#/$defs/dimensionResult"}
+      }
+    },
+    "overall": {"$ref": "#/$defs/overall"},
+    "feedback_summary": {"type": "string", "minLength": 1, "maxLength": 4000},
+    "next_learning_step": {"type": "string", "minLength": 1, "maxLength": 2000},
+    "tutor_mode": {"enum": ["llm", "rule_fallback"]}
+  },
+  "$defs": {
+    "diagnosisReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["submitted", "assessment", "reference_explanation"],
+      "properties": {
+        "submitted": {"$ref": "diagnosis-submission.schema.json"},
+        "assessment": {"enum": ["correct", "partially_correct", "incorrect", "insufficient"]},
+        "reference_explanation": {"type": "string", "minLength": 1, "maxLength": 4000}
+      }
+    },
+    "dimensionResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "score", "weight", "rationale", "rule_ids", "trace_indices"],
+      "properties": {
+        "status": {"enum": ["scored", "not_assessed"]},
+        "score": {"type": ["number", "null"], "minimum": 0, "maximum": 100},
+        "weight": {"type": "number", "minimum": 0, "maximum": 1},
+        "rationale": {"type": "string", "minLength": 1, "maxLength": 2000},
+        "rule_ids": {"type": "array", "items": {"type": "string"}},
+        "trace_indices": {"type": "array", "items": {"type": "integer", "minimum": 0}}
+      }
+    },
+    "overall": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["score", "coverage", "included_dimensions"],
+      "properties": {
+        "score": {"type": ["number", "null"], "minimum": 0, "maximum": 100},
+        "coverage": {"type": "number", "minimum": 0, "maximum": 1},
+        "included_dimensions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"enum": ["hypothesis", "evidence", "efficiency", "updating", "safety"]}
+        }
+      }
+    }
+  }
+}
