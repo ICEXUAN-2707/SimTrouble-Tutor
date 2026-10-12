@@ -1,0 +1,81 @@
+name: Product v0.4
+
+on:
+  push:
+    branches: [main, develop, "phase/product-v0.4"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  product-v0-4:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Run Python regression
+        run: python -B -m unittest discover -s tests -p "test_*.py" -v
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/training_web/package-lock.json
+
+      - name: Install web dependencies
+        working-directory: apps/training_web
+        run: npm ci
+
+      - name: Type-check and build web application
+        working-directory: apps/training_web
+        run: npm run build
+
+      - name: Install Playwright Chromium
+        working-directory: apps/training_web
+        run: npx playwright install --with-deps chromium
+
+      - name: Start local product services
+        shell: bash
+        run: |
+          python -B -m apps.training_api > api.log 2>&1 &
+          npm --prefix apps/training_web run dev > web.log 2>&1 &
+          python - <<'PY'
+          import time
+          import urllib.request
+
+          for url in ("http://127.0.0.1:8001/healthz", "http://127.0.0.1:5174"):
+              for _ in range(60):
+                  try:
+                      with urllib.request.urlopen(url, timeout=1) as response:
+                          if response.status == 200:
+                              break
+                  except OSError:
+                      time.sleep(0.25)
+              else:
+                  raise SystemExit(f"service did not become ready: {url}")
+          PY
+
+      - name: Run browser smoke
+        working-directory: apps/training_web
+        env:
+          SIMTROUBLE_BROWSER_CHANNEL: bundled
+        run: node e2e/smoke-ci.mjs
+
+      - name: Print service logs on failure
+        if: failure()
+        run: |
+          test -f api.log && cat api.log || true
+          test -f web.log && cat web.log || true
+
