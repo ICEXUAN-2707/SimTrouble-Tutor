@@ -9,3 +9,4 @@ __pycache__/
 !.env.example
 coverage.xml
 htmlcov/
+demo_app/llm_settings.json

@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SimTrouble Tutor · ST-001 演示</title>
+  <style>
+    :root{--ink:#172426;--muted:#687879;--teal:#007e79;--soft:#e9f4f2;--paper:#fff;--line:#dfe8e6;--orange:#de6b36}
+    *{box-sizing:border-box}body{margin:0;font-family:"Microsoft YaHei","Noto Sans CJK SC",Arial,sans-serif;background:#f5f7f5;color:var(--ink)}
+    button,input,textarea{font:inherit}button{cursor:pointer}header{background:#123836;color:#fff;padding:20px 32px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .brand{font-size:23px;font-weight:800;letter-spacing:.2px}.brand span{color:#84d2c7}.topmeta{font-size:13px;color:#c7e2dc}.topmeta b{font-weight:600;color:#fff}
+    .banner{background:#e7f2ef;border-bottom:1px solid #d3e5df;padding:11px 32px;color:#35635f;font-size:13px}
+    main{max-width:1500px;margin:24px auto;padding:0 24px}.hero{display:flex;align-items:end;justify-content:space-between;gap:20px;margin-bottom:20px}.eyebrow{color:var(--teal);font-size:12px;font-weight:800;letter-spacing:2px}
+    h1{margin:5px 0 4px;font-size:28px;line-height:1.25}h2{font-size:17px;margin:0 0 15px}.sub{color:var(--muted);font-size:14px;margin:0}.reset{border:1px solid #bed5cf;background:white;color:#1b625d;border-radius:8px;padding:10px 15px;font-weight:700}
+    .layout{display:grid;grid-template-columns:minmax(300px,1.1fr) minmax(400px,1.35fr) minmax(280px,.85fr);gap:18px;align-items:start}.card{background:var(--paper);border:1px solid var(--line);border-radius:13px;box-shadow:0 3px 14px rgba(16,51,47,.04);overflow:hidden}.cardbody{padding:20px}.label{display:block;font-size:11px;font-weight:800;color:var(--teal);letter-spacing:1.5px;margin-bottom:7px}
+    .scene{background:linear-gradient(135deg,#e8f1ef,#d8e9e4);height:220px;position:relative;overflow:hidden}.scene svg{width:100%;height:100%}.scene-caption{position:absolute;bottom:13px;left:16px;background:#fffdf0;border:1px solid #e8dcae;border-radius:6px;padding:5px 9px;font-size:11px;color:#746527;font-weight:700}
+    .observations{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:15px 0}.obs{border:1px solid var(--line);background:#fafcfb;border-radius:7px;padding:10px 11px;font-size:12px}.obs b{display:block;font-size:11px;color:#6a7a78;margin-bottom:4px}.obs.alert{background:#fff4ef;border-color:#f3d7c8;color:#a64e2d}.obs.alert b{color:#bb7659}
+    .evidence{display:grid;gap:8px}.ev{width:100%;display:flex;align-items:center;justify-content:space-between;text-align:left;background:white;border:1px solid var(--line);border-radius:8px;padding:11px 12px;color:var(--ink)}.ev:hover{border-color:var(--teal);background:#f7fbfa}.ev strong{color:var(--teal)}.ev small{display:block;color:var(--muted);font-size:11px;margin-top:3px}.ev .pill{font-size:11px;padding:4px 7px;border-radius:20px;background:#e9f4f1;color:#33766e}.ev.open .pill{background:#d5ede8;color:#126e61}
+    .data{margin:8px 0 0;padding:9px 11px;border-radius:6px;background:#f4f8f7;font-size:12px;color:#425c59;white-space:pre-wrap;word-break:break-word}.chat-head{padding:19px 20px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}.status{border-radius:20px;padding:6px 9px;font-size:11px;background:#e7f4ef;color:#327466}.chat{height:397px;overflow:auto;padding:19px;background:#fcfdfc;display:flex;flex-direction:column;gap:11px}.bubble{max-width:90%;padding:12px 14px;border-radius:12px;font-size:13px;line-height:1.65;white-space:pre-wrap}.bubble.tutor{align-self:flex-start;background:#edf5f2;border:1px solid #dceae5}.bubble.user{align-self:flex-end;color:white;background:#226c66}.who{font-size:10px;font-weight:800;letter-spacing:.7px;margin-bottom:4px;opacity:.67}
+    .prompts{padding:11px 19px 3px;border-top:1px solid var(--line);display:flex;gap:6px;flex-wrap:wrap}.prompt{border:1px solid #d5e4df;border-radius:20px;background:#fff;color:#316b63;padding:6px 9px;font-size:11px}.compose{display:flex;gap:8px;padding:12px 19px 19px}.compose input{flex:1;min-width:0;border:1px solid #c9d8d2;border-radius:7px;padding:11px;font-size:13px;outline:none}.compose input:focus,textarea:focus{border-color:var(--teal)}.primary{border:0;background:var(--teal);color:#fff;font-weight:700;border-radius:7px;padding:10px 15px}.primary:hover{background:#006f69}
+    .section{padding:20px;border-bottom:1px solid var(--line)}.section:last-child{border-bottom:0}.small{font-size:12px;color:var(--muted);line-height:1.55;margin:0 0 11px}.field{width:100%;resize:vertical;min-height:65px;border:1px solid #ccd9d5;border-radius:7px;padding:9px 10px;font-size:12px;line-height:1.5;outline:none}.full{width:100%;margin-top:8px}.current{font-size:12px;line-height:1.6;color:#43615b;background:#f2f8f6;border-radius:7px;padding:9px;margin-top:9px;word-break:break-word}.timeline{display:grid;gap:12px}.event{border-left:2px solid #b8d9d1;padding-left:10px;font-size:12px;line-height:1.4}.event b{color:#2d756c;margin-right:6px}.event span{color:#697a77;word-break:break-word}.result{border:1px solid #c9e2dc;background:#f2f9f6;border-radius:8px;padding:13px;font-size:12px;line-height:1.6}.result strong{color:#116d5f}.foot{font-size:11px;color:#7d8985;text-align:center;margin:20px 0 28px}#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#173c38;color:white;padding:10px 16px;border-radius:7px;font-size:12px;display:none}
+    .model-btn{border:1px solid #2f5f58;background:#1b4a45;color:#d9efe9;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}.model-btn:hover{background:#245a53}
+    .dot{width:8px;height:8px;border-radius:50%;display:inline-block}.dot.on{background:#5ad4a2}.dot.off{background:#8aa5a0}
+    .modal-mask{position:fixed;inset:0;background:rgba(15,35,32,.45);display:flex;align-items:center;justify-content:center;z-index:50}.modal-mask[hidden]{display:none}
+    .modal{background:#fff;border-radius:14px;width:460px;max-width:calc(100vw - 32px);max-height:92vh;overflow:auto;box-shadow:0 18px 50px rgba(10,40,35,.25)}
+    .modal-head{display:flex;align-items:center;gap:10px;padding:18px 22px;border-bottom:1px solid var(--line)}.modal-head h3{margin:0;font-size:17px}
+    .modal-tag{font-size:11px;color:var(--muted);background:#f1f6f4;border:1px solid var(--line);border-radius:20px;padding:3px 9px}
+    .modal-close{margin-left:auto;border:0;background:none;font-size:22px;color:var(--muted);line-height:1;padding:2px 6px}
+    .modal-body{padding:6px 22px 4px}.modal-body label{display:block;font-size:12px;color:var(--ink);font-weight:700;margin:13px 0 6px}
+    .modal-body input,.modal-body select{width:100%;border:1px solid #ccd9d5;border-radius:8px;padding:10px 11px;font-size:13px;outline:none;background:#fff}.modal-body input:focus,.modal-body select:focus{border-color:var(--teal)}
+    .keyrow{display:flex;gap:8px}.keyrow input{flex:1;min-width:0}.keyrow button{border:1px solid #ccd9d5;background:#fff;border-radius:8px;padding:0 12px;color:#43615b;font-size:12px}
+    .params{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}.plabel{font-size:11px;color:var(--muted);display:block;margin:0 0 4px;font-weight:600}
+    .modal-hint{font-size:11px;color:var(--muted);margin:14px 0 6px;line-height:1.7}.modal-hint.ok{color:#1b7a4e}.modal-hint.err{color:#b3452c}
+    .modal-foot{display:flex;gap:10px;padding:14px 22px 20px}.modal-foot .ghost{border:1px solid #ccd9d5;background:#fff;color:#43615b;border-radius:8px;padding:9px 13px;font-size:13px}.modal-foot .spacer{flex:1}
+    @media(max-width:1100px){.layout{grid-template-columns:1fr 1fr}.right{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}.right .section{border-bottom:0;border-right:1px solid var(--line)}}@media(max-width:720px){header{padding:16px 18px;align-items:flex-start;flex-direction:column}.banner{padding:10px 18px}main{padding:0 14px}.hero{align-items:start;flex-direction:column}.layout,.right{display:block}.card{margin-bottom:15px}.right .section{border-right:0;border-bottom:1px solid var(--line)}}
+  </style>
+</head>
+<body>
+<header><div class="brand">SimTrouble <span>Tutor</span></div><div class="topmeta"><b>ST-001 · 工业机器人柔性搬运</b> &nbsp; / &nbsp; 本地演示</div><button class="model-btn" id="model-btn">⚙ 模型设置<span class="dot off" id="llm-dot" title="在线大模型配置状态"></span></button></header>
+<div class="banner" id="banner">规则引导演示原型 · 基于 GitHub 仓库 Phase 2 Training Core；未接入在线大模型、正式诊断状态机或五维评分</div>
+<main>
+  <div class="hero"><div><div class="eyebrow">DIAGNOSTIC TRAINING</div><h1>从现象出发，找到抓取失败的原因</h1><p class="sub">观察现象 → 选择检查 → 提出假设 → 向 Tutor 提问 → 提交诊断</p></div><button class="reset" id="reset">↻ 重新开始</button></div>
+  <div class="layout">
+    <div class="card"><div class="scene"><svg viewBox="0 0 520 250" role="img" aria-label="工业机器人柔性搬运场景示意"><defs><pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M 30 0 L 0 0 0 30" fill="none" stroke="#b6d3cd" stroke-width="1"/></pattern></defs><rect width="520" height="250" fill="url(#grid)"/><path d="M0 186h520" stroke="#87aea5" stroke-width="2"/><rect x="30" y="187" width="460" height="42" rx="8" fill="#b7ccc7"/><rect x="47" y="160" width="92" height="27" rx="5" fill="#547f79"/><path d="M92 157L125 110 170 130 209 80" fill="none" stroke="#216e68" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/><circle cx="125" cy="110" r="12" fill="#173e3c"/><circle cx="170" cy="130" r="12" fill="#173e3c"/><circle cx="209" cy="80" r="11" fill="#173e3c"/><path d="M211 82l25 18m-4 0l20 -12m-20 12l8 23" stroke="#174742" stroke-width="8" stroke-linecap="round"/><rect x="287" y="161" width="48" height="25" rx="4" fill="#de8a54"/><rect x="393" y="154" width="78" height="33" rx="5" fill="none" stroke="#2a8179" stroke-width="3" stroke-dasharray="6 4"/><path d="M250 115h32" stroke="#d8683f" stroke-width="2" stroke-dasharray="4 3"/><path d="m275 110 9 5-9 5" fill="#d8683f"/><text x="288" y="144" font-size="13" fill="#245d58">工件</text><text x="399" y="143" font-size="13" fill="#245d58">目标区</text></svg><div class="scene-caption">场景示意 · 非物理仿真画面</div></div><div class="cardbody"><span class="label">当前可观察现象</span><div class="observations"><div class="obs"><b>机械臂</b>动作已完成</div><div class="obs"><b>夹爪</b>闭合命令已执行</div><div class="obs"><b>碰撞</b>未检测到</div><div class="obs alert"><b>异常</b>工件未被带走</div></div><span class="label">可选检查 · 点击后释放证据</span><div class="evidence" id="evidence"></div></div></div>
+    <div class="card"><div class="chat-head"><h2 style="margin:0">Tutor 对话</h2><span class="status" id="status">规则引导模式</span></div><div class="chat" id="chat"></div><div class="prompts"><button class="prompt" data-prompt="机械臂动作完成、夹爪闭合，但工件没有被带走。我应该先检查什么？">从哪里检查？</button><button class="prompt" data-prompt="E01 显示夹爪已闭合但没有夹住工件，这能说明什么？">解释 E01</button><button class="prompt" data-prompt="E02 显示工件 X 方向偏移 70 毫米，我该如何调整判断？">解释 E02</button></div><form class="compose" id="chat-form"><input id="question" maxlength="500" aria-label="向 Tutor 提问" placeholder="输入你的观察、疑问或证据判断…"><button class="primary">发送</button></form></div>
+    <div class="card right"><div><div class="section"><span class="label">你的诊断假设</span><p class="small">先写出可检验的解释，获得证据后可以修改。</p><textarea class="field" id="hypothesis" placeholder="例如：我怀疑……，准备检查……"></textarea><button class="primary full" id="save-hypothesis">保存假设</button><div class="current" id="current-hypothesis">尚未提出假设</div></div><div class="section"><span class="label">提交诊断</span><p class="small">写明结论与依据。提交后会显示本案例的参考解释。</p><textarea class="field" id="diagnosis" placeholder="我的诊断是……；依据为……"></textarea><button class="primary full" id="submit-diagnosis">提交并查看结果</button><div id="result" style="margin-top:10px"></div></div></div><div class="section"><span class="label">本轮操作记录</span><p class="small">仅为演示层事件记录，未替代计划中的正式 Trace。</p><div class="timeline" id="timeline"></div></div></div>
+  </div><div class="foot">SimTrouble Tutor 演示层 · ST-001 单案例 · 所有诊断结果限于该预设案例</div>
+</main>
+<div class="modal-mask" id="model-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-label="添加模型">
+    <div class="modal-head"><h3>添加模型</h3><span class="modal-tag">仅支持 OpenAI 兼容协议 API</span><button class="modal-close" id="model-close" aria-label="关闭">×</button></div>
+    <div class="modal-body">
+      <label for="llm-provider">提供商</label>
+      <select id="llm-provider"></select>
+      <label for="llm-base-url">接口地址</label>
+      <input id="llm-base-url" placeholder="https://api.example.com/v1" autocomplete="off" spellcheck="false">
+      <label for="llm-api-key">API Key</label>
+      <div class="keyrow"><input id="llm-api-key" type="password" placeholder="输入你的 API Key" autocomplete="off" spellcheck="false"><button type="button" id="llm-eye">显示</button></div>
+      <label for="llm-model">模型名称</label>
+      <input id="llm-model" placeholder="输入模型参数值，例如 gpt-4o 或 openai/gpt-4o" autocomplete="off" spellcheck="false">
+      <label>核心参数</label>
+      <div class="params">
+        <div><span class="plabel">temperature</span><input id="llm-temp" type="number" min="0" max="2" step="0.1"></div>
+        <div><span class="plabel">max_tokens</span><input id="llm-max-tokens" type="number" min="1" max="8192" step="1"></div>
+        <div><span class="plabel">超时（秒）</span><input id="llm-timeout" type="number" min="1" max="120" step="1"></div>
+      </div>
+      <p class="modal-hint" id="llm-hint">未配置模型时，Tutor 使用内置规则引导；配置后优先使用在线大模型，调用失败自动降级回规则。</p>
+    </div>
+    <div class="modal-foot"><button class="ghost" id="llm-test">测试连接</button><button class="ghost" id="llm-clear">清除配置</button><span class="spacer"></span><button class="ghost" id="llm-cancel">取消</button><button class="primary" id="llm-save">保存</button></div>
+  </div>
+</div>
+<div id="toast"></div>
+<script>
+const names={E01:'夹爪状态',E02:'工件位置',E03:'目标区状态'};
+const formatEvidence=e=>Object.entries(e.content).map(([k,v])=>`${k}: ${v}`).join('\n');
+const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let state;
+async function api(path,payload){const o={method:payload===undefined?'GET':'POST',headers:{'Content-Type':'application/json'}};if(payload!==undefined)o.body=JSON.stringify(payload);const r=await fetch(path,o);const x=await r.json();if(!r.ok)throw Error(x.error||'请求失败');return x}
+function toast(t){const el=document.getElementById('toast');el.textContent=t;el.style.display='block';setTimeout(()=>el.style.display='none',3000)}
+function render(s){state=s;
+ document.getElementById('llm-dot').className='dot '+(s.llm_configured?'on':'off');
+ document.getElementById('evidence').innerHTML=s.case.evidence_options.map(o=>{const e=s.released.find(v=>v.id===o.id);return `<div><button class="ev ${e?'open':''}" data-id="${o.id}"><span><strong>${o.id}</strong>　${names[o.id]||escape(o.type)}<small>${escape(o.type)}</small></span><span class="pill">${e?'已开放':'点击检查'}</span></button>${e?`<pre class="data">${escape(formatEvidence(e))}</pre>`:''}</div>`}).join('');
+ const who=s.tutor_source==='llm'?'TUTOR · 在线大模型':'TUTOR · 规则引导';
+ document.getElementById('status').textContent=s.tutor_source==='llm'?'在线大模型模式':'规则引导模式';
+ document.getElementById('banner').textContent=s.mode+' · 基于 GitHub 仓库 Phase 2 Training Core；接入在线大模型时仍只接收公开投影、输出需过校验'+(s.tutor_fallback?`（最近一次回退原因：${escape(s.tutor_fallback)}）`:'');
+ document.getElementById('chat').innerHTML=`<div class="bubble tutor"><div class="who">${who}</div>机械臂动作和夹爪命令已完成，但工件未被带走。请先提出一个可检验的假设，然后选择检查项。我会根据已开放证据帮助你推理。</div>`+s.messages.map(m=>`<div class="bubble ${m.role}"><div class="who">${m.role==='user'?'你':who}</div>${escape(m.text)}</div>`).join('');
+ const chat=document.getElementById('chat');chat.scrollTop=chat.scrollHeight;
+ document.getElementById('current-hypothesis').textContent=s.hypothesis||'尚未提出假设';
+ document.getElementById('timeline').innerHTML=s.events.length?s.events.map((e,i)=>`<div class="event"><b>${String(i+1).padStart(2,'0')} ${escape(e.kind)}</b><span>${escape(e.detail)}</span></div>`).join(''):'<p class="small">尚无操作记录</p>';
+ document.getElementById('result').innerHTML=s.diagnosis?`<div class="result"><strong>${s.diagnosis.correct?'与参考诊断一致':'与参考诊断不一致'}</strong><br>提交：${escape(s.diagnosis.submitted)}<br>参考解释：${escape(s.diagnosis.reference)}<br>已检查：${escape(s.diagnosis.evidence_used.join('、')||'无')}<br><small>${escape(s.diagnosis.note)}</small></div>`:'';
+ document.getElementById('submit-diagnosis').disabled=!!s.diagnosis;
+}
+async function run(path,payload){try{render(await api(path,payload))}catch(e){toast(e.message)}}
+document.getElementById('evidence').addEventListener('click',e=>{const b=e.target.closest('button[data-id]');if(b)run('/api/evidence',{id:b.dataset.id})});
+document.getElementById('save-hypothesis').onclick=()=>run('/api/hypothesis',{text:document.getElementById('hypothesis').value});
+document.getElementById('submit-diagnosis').onclick=()=>run('/api/diagnose',{text:document.getElementById('diagnosis').value});
+document.getElementById('chat-form').onsubmit=e=>{e.preventDefault();const input=document.getElementById('question');const text=input.value.trim();if(!text)return;input.value='';run('/api/chat',{text})};
+document.querySelectorAll('[data-prompt]').forEach(b=>b.onclick=()=>{document.getElementById('question').value=b.dataset.prompt;document.getElementById('question').focus()});
+document.getElementById('reset').onclick=async()=>{if(confirm('重新开始本轮 ST-001 训练？')){document.getElementById('hypothesis').value='';document.getElementById('diagnosis').value='';await run('/api/reset',{})}};
+// ---- 模型设置弹窗 ----
+const modal=document.getElementById('model-modal');
+let llmProviders={};
+const mEl=id=>document.getElementById(id);
+function setHint(text,cls){const h=mEl('llm-hint');h.textContent=text||'未配置模型时，Tutor 使用内置规则引导；配置后优先使用在线大模型，调用失败自动降级回规则。';h.className='modal-hint'+(cls?' '+cls:'')}
+async function openModelModal(){try{const s=await api('/api/model-settings');llmProviders=s.providers||{};
+ mEl('llm-provider').innerHTML=Object.entries(llmProviders).map(([k,v])=>`<option value="${k}"${k===s.provider?' selected':''}>${escape(v.label)}</option>`).join('');
+ mEl('llm-base-url').value=s.base_url||'';mEl('llm-model').value=s.model||'';
+ mEl('llm-api-key').value='';mEl('llm-api-key').type='password';mEl('llm-eye').textContent='显示';
+ mEl('llm-api-key').placeholder=s.api_key_set?`已保存（${s.api_key_masked}），留空沿用`:'输入你的 API Key';
+ mEl('llm-temp').value=s.temperature;mEl('llm-max-tokens').value=s.max_tokens;mEl('llm-timeout').value=s.timeout;
+ setHint('');modal.hidden=false}catch(e){toast(e.message)}}
+document.getElementById('model-btn').onclick=openModelModal;
+mEl('model-close').onclick=mEl('llm-cancel').onclick=()=>{modal.hidden=true};
+modal.addEventListener('click',e=>{if(e.target===modal)modal.hidden=true});
+mEl('llm-provider').onchange=()=>{const p=llmProviders[mEl('llm-provider').value];if(!p)return;mEl('llm-base-url').value=p.base_url||'';mEl('llm-model').value=p.model||''};
+mEl('llm-eye').onclick=()=>{const k=mEl('llm-api-key');k.type=k.type==='password'?'text':'password';mEl('llm-eye').textContent=k.type==='password'?'显示':'隐藏'};
+function formPayload(){return{provider:mEl('llm-provider').value,base_url:mEl('llm-base-url').value.trim(),api_key:mEl('llm-api-key').value.trim(),model:mEl('llm-model').value.trim(),temperature:mEl('llm-temp').value,max_tokens:mEl('llm-max-tokens').value,timeout:mEl('llm-timeout').value}}
+mEl('llm-test').onclick=async()=>{setHint('正在测试连接…');try{const r=await api('/api/model-settings/test',formPayload());setHint(r.message,r.ok?'ok':'err')}catch(e){setHint(e.message,'err')}};
+mEl('llm-save').onclick=async()=>{try{const r=await api('/api/model-settings',formPayload());modal.hidden=true;toast(r.configured?'模型设置已保存，Tutor 将优先使用在线大模型':'设置已保存（未配置完整），Tutor 使用内置规则');run('/api/state')}catch(e){setHint(e.message,'err')}};
+mEl('llm-clear').onclick=async()=>{if(!confirm('确定清除已保存的模型配置？清除后 Tutor 将使用内置规则引导。'))return;try{await api('/api/model-settings',{clear:true});modal.hidden=true;toast('已清除模型配置，回到内置规则引导');run('/api/state')}catch(e){setHint(e.message,'err')}};
+run('/api/state');
+</script>
+</body></html>
