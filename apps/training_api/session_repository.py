@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from copy import deepcopy
 from threading import RLock
 from typing import TypeVar
 
@@ -49,6 +50,19 @@ class SessionRepository:
     ) -> ResultT:
         with self._lock:
             return command(self._require(session_id))
+
+    def mutate_atomically(
+        self,
+        session_id: str,
+        command: Callable[[CaseSession], ResultT],
+    ) -> ResultT:
+        """Commit a command only after every operation succeeds."""
+
+        with self._lock:
+            candidate = deepcopy(self._require(session_id))
+            result = command(candidate)
+            self._sessions[session_id] = candidate
+            return result
 
     def _require(self, session_id: str) -> CaseSession:
         try:

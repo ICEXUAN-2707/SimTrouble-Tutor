@@ -6,6 +6,7 @@ from pathlib import Path
 
 from core.case_engine import CaseLoader
 from core.errors import EvidenceNotFoundError
+from core.evidence_engine import EvidenceManager
 from core.models.contracts import DiagnosticStage
 
 from apps.training_api.session_models import PublicSessionStage
@@ -18,6 +19,12 @@ from apps.training_api.session_service import (
 
 ROOT = Path(__file__).resolve().parents[2]
 CASE_PATH = ROOT / "data" / "cases" / "ST-001.json"
+
+
+class FailingAfterReleaseEvidenceManager(EvidenceManager):
+    def request(self, case_session, evidence_id):
+        super().request(case_session, evidence_id)
+        raise RuntimeError("injected downstream failure")
 
 
 class SessionServiceTests(unittest.TestCase):
@@ -150,6 +157,23 @@ class SessionServiceTests(unittest.TestCase):
             2,
             sum(event.action_type == "EvidenceReleased" for event in snapshot.trace),
         )
+
+    def test_evidence_command_rolls_back_after_downstream_failure(self) -> None:
+        case = CaseLoader().load(CASE_PATH)
+        repository = SessionRepository()
+        service = SessionService(
+            repository=repository,
+            cases={case.case_id: case},
+            evidence_manager=FailingAfterReleaseEvidenceManager(),
+        )
+        created = service.create("ST-001")
+        before = repository.inspect(created.session_id, lambda aggregate: aggregate.session)
+
+        with self.assertRaisesRegex(RuntimeError, "injected downstream failure"):
+            service.request_evidence(created.session_id, "E01")
+
+        after = repository.inspect(created.session_id, lambda aggregate: aggregate.session)
+        self.assertEqual(before, after)
 
     def test_projected_evidence_is_a_defensive_copy(self) -> None:
         created = self.service.create("ST-001")

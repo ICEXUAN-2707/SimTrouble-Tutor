@@ -78,4 +78,3 @@ jobs:
         run: |
           test -f api.log && cat api.log || true
           test -f web.log && cat web.log || true
-

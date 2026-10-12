@@ -66,9 +66,13 @@ class SessionService:
         session_id: str,
         evidence_id: str,
     ) -> EvidenceResponse:
+        self._repository.mutate(
+            session_id,
+            lambda aggregate: self._guard_evidence_exists(aggregate, evidence_id),
+        )
+
         def command(aggregate: CaseSession) -> EvidenceResponse:
             stage = aggregate.session.current_stage
-            self._guard_evidence_exists(aggregate, evidence_id)
             if stage is DiagnosticStage.OBSERVE:
                 aggregate.transition_to(DiagnosticStage.INVESTIGATE)
             elif stage is DiagnosticStage.HYPOTHESIZE:
@@ -88,7 +92,7 @@ class SessionService:
                 session=self._projector.project(aggregate),
             )
 
-        return self._repository.mutate(session_id, command)
+        return self._repository.mutate_atomically(session_id, command)
 
     def submit_hypothesis(self, session_id: str, hypothesis: str) -> SessionView:
         normalized = hypothesis.strip()
@@ -112,7 +116,7 @@ class SessionService:
             aggregate.submit_hypothesis(normalized)
             return self._projector.project(aggregate)
 
-        return self._repository.mutate(session_id, command)
+        return self._repository.mutate_atomically(session_id, command)
 
     def _guard_evidence_exists(
         self,

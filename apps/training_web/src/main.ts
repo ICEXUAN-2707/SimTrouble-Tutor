@@ -26,6 +26,21 @@ interface SceneConfig {
   public_observations: string[];
 }
 
+interface SimulationSnapshot {
+  stepId: string;
+  status: StepStatus;
+  endEffectorPosition: Vec3;
+  workpiecePosition: Vec3;
+  endEffectorDistance: number;
+  objectAttached: boolean;
+}
+
+declare global {
+  interface Window {
+    __SIMTROUBLE_INSPECT__?: () => SimulationSnapshot;
+  }
+}
+
 const byId = <T extends HTMLElement>(id: string): T => {
   const element = document.getElementById(id);
   if (!element) throw new Error(`Missing element #${id}`);
@@ -213,6 +228,19 @@ function interpolatePose(stepIndex: number, progress: number): void {
   setRobotPose(angles, opening);
 }
 
+function inspectSimulation(): SimulationSnapshot {
+  const endEffectorPosition = wrist.localToWorld(new THREE.Vector3(0, 1.3, 0));
+  const workpiecePosition = workpiece.getWorldPosition(new THREE.Vector3());
+  return {
+    stepId: config.timeline[currentStep].id,
+    status: config.timeline[currentStep].status,
+    endEffectorPosition: endEffectorPosition.toArray(),
+    workpiecePosition: workpiecePosition.toArray(),
+    endEffectorDistance: endEffectorPosition.distanceTo(workpiecePosition),
+    objectAttached: config.timeline[currentStep].object_attached,
+  };
+}
+
 function renderTimeline(): void {
   timelineTrack.replaceChildren(...config.timeline.map((step, index) => {
     const node = document.createElement("div");
@@ -282,8 +310,10 @@ function bindControls(): void {
   resetButton.addEventListener("click", resetPlayback);
   skipButton.addEventListener("click", () => {
     if (currentStep === config.timeline.length - 1) return;
-    advanceStep();
+    currentStep += 1;
+    stepElapsed = config.timeline[currentStep].duration_ms;
     interpolatePose(currentStep, 1);
+    updateInterface();
   });
 
   document.querySelectorAll<HTMLButtonElement>("[data-tool]").forEach((button) => button.addEventListener("click", () => {
@@ -359,6 +389,10 @@ async function initialise(): Promise<void> {
     byId("task-copy").textContent = config.task;
     buildScene(config);
     setRobotPose(config.timeline[0].joint_angles, config.timeline[0].gripper_opening);
+    Object.defineProperty(window, "__SIMTROUBLE_INSPECT__", {
+      configurable: true,
+      value: inspectSimulation,
+    });
     bindControls();
     updateInterface();
     loadingState.hidden = true;

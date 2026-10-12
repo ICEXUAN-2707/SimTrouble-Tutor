@@ -19,7 +19,7 @@
       "label": "系统就绪",
       "duration_ms": 900,
       "status": "READY",
-      "joint_angles": [0, -24, 62, -38],
+      "joint_angles": [-10.061, -10.719, -84.128, 0],
       "gripper_opening": 1.0,
       "object_attached": false
     },
@@ -28,7 +28,7 @@
       "label": "接近抓取位置",
       "duration_ms": 1500,
       "status": "EXECUTING",
-      "joint_angles": [-18, -9, 48, -53],
+      "joint_angles": [-10.061, -16.861, -94.819, 0],
       "gripper_opening": 1.0,
       "object_attached": false
     },
@@ -37,7 +37,7 @@
       "label": "末端下降",
       "duration_ms": 1200,
       "status": "EXECUTING",
-      "joint_angles": [-20, 5, 35, -61],
+      "joint_angles": [-10.061, -33.411, -97.029, 0],
       "gripper_opening": 0.9,
       "object_attached": false
     },
@@ -46,7 +46,7 @@
       "label": "夹爪闭合",
       "duration_ms": 900,
       "status": "GRASP_ATTEMPT",
-      "joint_angles": [-20, 5, 35, -61],
+      "joint_angles": [-10.061, -33.411, -97.029, 0],
       "gripper_opening": 0.12,
       "object_attached": false
     },
@@ -55,7 +55,7 @@
       "label": "抓取失败｜工件未随末端移动",
       "duration_ms": 1600,
       "status": "FAILURE_OBSERVED",
-      "joint_angles": [-20, -8, 48, -51],
+      "joint_angles": [-10.061, -16.861, -94.819, 0],
       "gripper_opening": 0.12,
       "object_attached": false
     }

@@ -3,6 +3,7 @@
   font-family: "Segoe UI Variable", "Microsoft YaHei UI", "Segoe UI", sans-serif;
   background: #0b0e0d;
   color: #e7ece9;
+  --text: #e7ece9;
   --bg: #0b0e0d;
   --panel: #111615;
   --panel-raised: #171d1b;
