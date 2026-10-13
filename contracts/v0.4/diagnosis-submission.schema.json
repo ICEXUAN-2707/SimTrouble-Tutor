@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://simtrouble.local/contracts/v0.4/diagnosis-submission.schema.json",
+  "title": "DiagnosisSubmissionV04",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "diagnosis_type", "reasoning", "cited_evidence_ids"],
+  "properties": {
+    "contract_version": {"type": "string", "pattern": "^0\\.4\\.[0-9]+$"},
+    "diagnosis_type": {
+      "enum": [
+        "object_pose_mismatch",
+        "grasp_failure",
+        "obstacle_collision_risk",
+        "placement_target_conflict"
+      ]
+    },
+    "reasoning": {"type": "string", "minLength": 1, "maxLength": 4000},
+    "cited_evidence_ids": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    }
+  }
+}
+

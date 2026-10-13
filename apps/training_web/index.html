@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#111514" />
+    <meta name="description" content="SimTrouble Tutor CAD-style fault training workspace" />
+    <title>SimTrouble Tutor / CAD Training Workspace</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <div class="brand-block">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <div><p class="product-name">SIMTROUBLE</p><p class="product-subtitle">DIAGNOSTIC TRAINING SYSTEM</p></div>
+        </div>
+        <div class="case-heading">
+          <span class="case-code" id="case-code">ST-001</span><span class="case-divider"></span>
+          <strong id="case-title">LOADING WORKCELL</strong>
+        </div>
+        <div class="system-status"><span class="status-dot"></span><span>LOCAL CAD MODE</span><span class="build-label">BUILD 0.4</span></div>
+      </header>
+      <main class="workspace">
+        <nav class="toolrail" aria-label="CAD view tools">
+          <button class="tool active" type="button" data-tool="orbit" aria-label="Orbit view" title="Orbit view">OR</button>
+          <button class="tool" type="button" data-tool="pan" aria-label="Pan view" title="Pan view">PN</button>
+          <button class="tool" type="button" data-tool="grid" aria-label="Toggle grid" title="Toggle grid">GR</button>
+          <button class="tool" type="button" data-tool="axes" aria-label="Toggle axes" title="Toggle axes">AX</button>
+          <span class="toolrail-spacer"></span>
+          <button class="tool" type="button" data-tool="fit" aria-label="Fit view" title="Fit view">FT</button>
+        </nav>
+        <section class="viewport-shell" aria-labelledby="viewport-title">
+          <div class="viewport-head">
+            <div><span class="panel-index">01</span><span class="panel-title" id="viewport-title">WORKCELL VIEWPORT</span></div>
+            <div class="viewport-meta"><span>ORTHOGRAPHIC</span><span>MM</span><span id="fps-label">-- FPS</span></div>
+          </div>
+          <div id="cad-viewport" class="cad-viewport" role="img" aria-label="3D industrial robot workcell simulation">
+            <div class="crosshair" aria-hidden="true"></div>
+            <div class="view-cube" aria-hidden="true"><span class="cube-top">TOP</span><span class="cube-front">FRONT</span><span class="cube-side">RIGHT</span></div>
+            <div class="viewport-label">WCS / 0,0,0</div>
+            <div class="fault-callout" id="fault-callout" hidden><span class="callout-line"></span><div><small>OBSERVATION</small><strong>WORKPIECE DID NOT FOLLOW GRIPPER</strong></div></div>
+            <div class="loading-state" id="loading-state"><span class="loading-spinner"></span><strong>BUILDING CAD SCENE</strong><small>Reading ST-001 public scene configuration</small></div>
+          </div>
+          <div class="viewport-foot"><span>LEFT: ORBIT / RIGHT: PAN / WHEEL: ZOOM</span><span id="camera-readout">X -- / Y -- / Z --</span></div>
+        </section>
+        <aside class="inspector">
+          <div class="inspector-head">
+            <div><span class="panel-index">02</span><span class="panel-title">CASE INSPECTOR</span></div>
+            <span class="mode-chip">LEARN</span>
+          </div>
+          <section class="task-card">
+            <p class="eyebrow">CURRENT OBJECTIVE</p>
+            <h1 id="task-title">Loading training task</h1>
+            <p id="task-copy">The anomaly exercise starts when the public scene configuration is ready.</p>
+          </section>
+          <section class="state-card">
+            <div class="state-row"><span>CASE STATE</span><strong id="case-state">READY</strong></div>
+            <div class="state-row"><span>SCENE SOURCE</span><strong>PUBLIC CONFIG</strong></div>
+            <div class="state-row"><span>TUTOR</span><strong class="pending">T2 PENDING</strong></div>
+          </section>
+          <section class="observation-card">
+            <div class="section-heading"><span>PUBLIC OBSERVATIONS</span><small>PUBLIC</small></div>
+            <ul id="observations" class="observation-list"><li>Awaiting animation playback</li></ul>
+          </section>
+          <section class="tutor-placeholder">
+            <div class="tutor-icon">AI</div>
+            <div><strong>LLM Tutor boundary reserved</strong><p>T2 will add dynamic guidance using public learner context only.</p></div>
+          </section>
+        </aside>
+        <section class="timeline-panel" aria-label="Animation controls and timeline">
+          <div class="transport">
+            <button id="reset-button" class="transport-button secondary" type="button">RESET</button>
+            <button id="play-button" class="transport-button primary" type="button">PLAY</button>
+            <button id="skip-button" class="transport-button secondary" type="button">SKIP</button>
+          </div>
+          <div class="timeline-content">
+            <div class="timeline-status"><span id="step-index">00 / 00</span><strong id="step-label">Awaiting scene config</strong><span id="elapsed-label">00:00.0</span></div>
+            <div class="timeline-track" id="timeline-track"></div>
+          </div>
+          <div class="phase-indicator"><small>LEARNER PHASE</small><strong id="learner-phase">READY</strong></div>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
