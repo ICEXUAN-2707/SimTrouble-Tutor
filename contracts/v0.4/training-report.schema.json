@@ -41,6 +41,188 @@
     "next_learning_step": {"type": "string", "minLength": 1, "maxLength": 2000},
     "tutor_mode": {"enum": ["llm", "rule_fallback"]}
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "dimension_results": {
+            "properties": {
+              "hypothesis": {
+                "properties": {"status": {"const": "scored"}},
+                "required": ["status"]
+              }
+            },
+            "required": ["hypothesis"]
+          }
+        },
+        "required": ["dimension_results"]
+      },
+      "then": {
+        "properties": {
+          "overall": {
+            "properties": {
+              "included_dimensions": {"contains": {"const": "hypothesis"}}
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "overall": {
+            "properties": {
+              "included_dimensions": {
+                "not": {"contains": {"const": "hypothesis"}}
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "dimension_results": {
+            "properties": {
+              "evidence": {
+                "properties": {"status": {"const": "scored"}},
+                "required": ["status"]
+              }
+            },
+            "required": ["evidence"]
+          }
+        },
+        "required": ["dimension_results"]
+      },
+      "then": {
+        "properties": {
+          "overall": {
+            "properties": {
+              "included_dimensions": {"contains": {"const": "evidence"}}
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "overall": {
+            "properties": {
+              "included_dimensions": {
+                "not": {"contains": {"const": "evidence"}}
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "dimension_results": {
+            "properties": {
+              "efficiency": {
+                "properties": {"status": {"const": "scored"}},
+                "required": ["status"]
+              }
+            },
+            "required": ["efficiency"]
+          }
+        },
+        "required": ["dimension_results"]
+      },
+      "then": {
+        "properties": {
+          "overall": {
+            "properties": {
+              "included_dimensions": {"contains": {"const": "efficiency"}}
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "overall": {
+            "properties": {
+              "included_dimensions": {
+                "not": {"contains": {"const": "efficiency"}}
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "dimension_results": {
+            "properties": {
+              "updating": {
+                "properties": {"status": {"const": "scored"}},
+                "required": ["status"]
+              }
+            },
+            "required": ["updating"]
+          }
+        },
+        "required": ["dimension_results"]
+      },
+      "then": {
+        "properties": {
+          "overall": {
+            "properties": {
+              "included_dimensions": {"contains": {"const": "updating"}}
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "overall": {
+            "properties": {
+              "included_dimensions": {
+                "not": {"contains": {"const": "updating"}}
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "dimension_results": {
+            "properties": {
+              "safety": {
+                "properties": {"status": {"const": "scored"}},
+                "required": ["status"]
+              }
+            },
+            "required": ["safety"]
+          }
+        },
+        "required": ["dimension_results"]
+      },
+      "then": {
+        "properties": {
+          "overall": {
+            "properties": {
+              "included_dimensions": {"contains": {"const": "safety"}}
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "overall": {
+            "properties": {
+              "included_dimensions": {
+                "not": {"contains": {"const": "safety"}}
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
   "$defs": {
     "diagnosisReview": {
       "type": "object",
@@ -63,7 +245,30 @@
         "rationale": {"type": "string", "minLength": 1, "maxLength": 2000},
         "rule_ids": {"type": "array", "items": {"type": "string"}},
         "trace_indices": {"type": "array", "items": {"type": "integer", "minimum": 0}}
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"status": {"const": "scored"}},
+            "required": ["status"]
+          },
+          "then": {
+            "properties": {"score": {"type": "number", "minimum": 0, "maximum": 100}}
+          }
+        },
+        {
+          "if": {
+            "properties": {"status": {"const": "not_assessed"}},
+            "required": ["status"]
+          },
+          "then": {
+            "properties": {
+              "score": {"type": "null"},
+              "weight": {"const": 0}
+            }
+          }
+        }
+      ]
     },
     "overall": {
       "type": "object",
@@ -77,7 +282,91 @@
           "uniqueItems": true,
           "items": {"enum": ["hypothesis", "evidence", "efficiency", "updating", "safety"]}
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"included_dimensions": {"maxItems": 0}},
+            "required": ["included_dimensions"]
+          },
+          "then": {
+            "properties": {
+              "score": {"type": "null"},
+              "coverage": {"const": 0}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "included_dimensions": {"minItems": 1, "maxItems": 1}
+            },
+            "required": ["included_dimensions"]
+          },
+          "then": {
+            "properties": {
+              "score": {"type": "number"},
+              "coverage": {"const": 0.2}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "included_dimensions": {"minItems": 2, "maxItems": 2}
+            },
+            "required": ["included_dimensions"]
+          },
+          "then": {
+            "properties": {
+              "score": {"type": "number"},
+              "coverage": {"const": 0.4}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "included_dimensions": {"minItems": 3, "maxItems": 3}
+            },
+            "required": ["included_dimensions"]
+          },
+          "then": {
+            "properties": {
+              "score": {"type": "number"},
+              "coverage": {"const": 0.6}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "included_dimensions": {"minItems": 4, "maxItems": 4}
+            },
+            "required": ["included_dimensions"]
+          },
+          "then": {
+            "properties": {
+              "score": {"type": "number"},
+              "coverage": {"const": 0.8}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "included_dimensions": {"minItems": 5, "maxItems": 5}
+            },
+            "required": ["included_dimensions"]
+          },
+          "then": {
+            "properties": {
+              "score": {"type": "number"},
+              "coverage": {"const": 1}
+            }
+          }
+        }
+      ]
     }
   }
 }
