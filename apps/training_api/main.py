@@ -15,6 +15,8 @@ from .session_models import (
     EvidenceResponse,
     HypothesisRequest,
     SessionView,
+    TutorTurnRequest,
+    TutorTurnResponse,
 )
 from .session_repository import SessionNotFoundError
 from .session_service import (
@@ -22,14 +24,17 @@ from .session_service import (
     SessionService,
     SessionStageConflictError,
 )
+from .tutor import TutorService, build_tutor_service
 
 
 def create_app(
     repository: SceneRepository | None = None,
     session_service: SessionService | None = None,
+    tutor_service: TutorService | None = None,
 ) -> FastAPI:
     scenes = repository or SceneRepository()
     sessions = session_service or SessionService()
+    tutor = tutor_service or build_tutor_service(sessions)
     application = FastAPI(
         title="SimTrouble Tutor API",
         version="0.4.0",
@@ -109,6 +114,19 @@ def create_app(
             raise HTTPException(status_code=404, detail="session_not_found") from exc
         except SessionStageConflictError as exc:
             raise HTTPException(status_code=409, detail="invalid_session_stage") from exc
+
+    @application.post(
+        "/api/v0.4/sessions/{session_id}/tutor",
+        response_model=TutorTurnResponse,
+    )
+    async def ask_tutor(
+        session_id: str,
+        request: TutorTurnRequest,
+    ) -> TutorTurnResponse:
+        try:
+            return await tutor.ask(session_id, request.message)
+        except SessionNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="session_not_found") from exc
 
     return application
 

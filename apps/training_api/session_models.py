@@ -8,7 +8,7 @@ from pydantic import Field, field_validator
 
 from core.models import CasePublicState, ReleasedEvidence
 
-from .learning_models import FrozenContract, TutorAction
+from .learning_models import FrozenContract, TutorAction, TutorMode, TutorResponse
 
 
 class PublicSessionStage(StrEnum):
@@ -61,3 +61,21 @@ class SessionView(FrozenContract):
 class EvidenceResponse(FrozenContract):
     evidence: ReleasedEvidence
     session: SessionView
+
+
+class TutorTurnRequest(FrozenContract):
+    message: str = Field(min_length=1, max_length=2_000)
+
+    @field_validator("message")
+    @classmethod
+    def normalize_message(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("message must not be empty")
+        return normalized
+
+
+class TutorTurnResponse(FrozenContract):
+    tutor: TutorResponse
+    session: SessionView
+    tutor_mode: TutorMode

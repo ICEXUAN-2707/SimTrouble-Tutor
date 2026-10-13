@@ -6,11 +6,17 @@ import unittest
 from httpx import ASGITransport, AsyncClient
 
 from apps.training_api.main import create_app
+from apps.training_api.session_service import SessionService
+from apps.training_api.tutor.service import TutorService
 
 
 class SessionApiTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self) -> None:
-        self.app = create_app()
+        sessions = SessionService()
+        self.app = create_app(
+            session_service=sessions,
+            tutor_service=TutorService(sessions),
+        )
         self.client = AsyncClient(
             transport=ASGITransport(app=self.app),
             base_url="http://testserver",
@@ -28,6 +34,17 @@ class SessionApiTests(unittest.IsolatedAsyncioTestCase):
         created = create_response.json()
         session_id = created["session_id"]
         self.assertEqual("READY", created["public_stage"])
+
+        tutor_response = await self.client.post(
+            f"/api/v0.4/sessions/{session_id}/tutor",
+            json={"message": "What should I inspect first?"},
+        )
+        self.assertEqual(200, tutor_response.status_code)
+        self.assertEqual("rule_fallback", tutor_response.json()["tutor_mode"])
+        self.assertEqual(
+            "inspect_evidence",
+            tutor_response.json()["tutor"]["suggested_action"],
+        )
 
         evidence_response = await self.client.post(
             f"/api/v0.4/sessions/{session_id}/evidence",
@@ -73,6 +90,15 @@ class SessionApiTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(404, missing_session.status_code)
         self.assertEqual("session_not_found", missing_session.json()["detail"])
 
+        missing_tutor_session = await self.client.post(
+            "/api/v0.4/sessions/not-found/tutor",
+            json={"message": "Help"},
+        )
+        self.assertEqual(404, missing_tutor_session.status_code)
+        self.assertEqual(
+            "session_not_found", missing_tutor_session.json()["detail"]
+        )
+
         created = (await self.client.post(
             "/api/v0.4/sessions",
             json={"case_id": "ST-001"},
@@ -98,6 +124,12 @@ class SessionApiTests(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(422, blank_hypothesis.status_code)
 
+        blank_tutor_message = await self.client.post(
+            f"/api/v0.4/sessions/{session_id}/tutor",
+            json={"message": "   "},
+        )
+        self.assertEqual(422, blank_tutor_message.status_code)
+
     async def test_extra_fields_are_rejected(self) -> None:
         response = await self.client.post(
             "/api/v0.4/sessions",
@@ -118,6 +150,7 @@ class SessionApiTests(unittest.IsolatedAsyncioTestCase):
                 "/api/v0.4/sessions/{session_id}",
                 "/api/v0.4/sessions/{session_id}/evidence",
                 "/api/v0.4/sessions/{session_id}/hypotheses",
+                "/api/v0.4/sessions/{session_id}/tutor",
             },
             paths,
         )
