@@ -183,12 +183,27 @@ class OverallScore(FrozenContract):
     coverage: float = Field(ge=0, le=1)
     included_dimensions: tuple[SkillDimension, ...]
 
+    @field_validator("included_dimensions")
+    @classmethod
+    def validate_unique_dimensions(
+        cls,
+        value: tuple[SkillDimension, ...],
+    ) -> tuple[SkillDimension, ...]:
+        if len(value) != len(set(value)):
+            raise ValueError("included_dimensions must be unique")
+        return value
+
     @model_validator(mode="after")
-    def validate_empty_coverage(self) -> "OverallScore":
+    def validate_score_and_coverage(self) -> "OverallScore":
         if not self.included_dimensions and self.score is not None:
             raise ValueError("overall score must be null when no dimensions are included")
         if self.included_dimensions and self.score is None:
             raise ValueError("overall score is required when dimensions are included")
+        expected_coverage = len(self.included_dimensions) / len(SkillDimension)
+        if self.coverage != expected_coverage:
+            raise ValueError(
+                "coverage must equal the proportion of included skill dimensions"
+            )
         return self
 
 
