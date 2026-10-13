@@ -35,6 +35,20 @@ interface SimulationSnapshot {
   objectAttached: boolean;
 }
 
+interface SessionView {
+  session_id: string;
+  public_stage: string;
+}
+
+interface TutorTurnResponse {
+  tutor: {
+    message: string;
+    suggested_action: string | null;
+  };
+  session: SessionView;
+  tutor_mode: "llm" | "rule_fallback";
+}
+
 declare global {
   interface Window {
     __SIMTROUBLE_INSPECT__?: () => SimulationSnapshot;
@@ -54,6 +68,11 @@ const resetButton = byId<HTMLButtonElement>("reset-button");
 const skipButton = byId<HTMLButtonElement>("skip-button");
 const faultCallout = byId<HTMLDivElement>("fault-callout");
 const timelineTrack = byId<HTMLDivElement>("timeline-track");
+const tutorStatus = byId<HTMLElement>("tutor-status");
+const tutorLog = byId<HTMLDivElement>("tutor-log");
+const tutorForm = byId<HTMLFormElement>("tutor-form");
+const tutorInput = byId<HTMLTextAreaElement>("tutor-input");
+const tutorSubmit = byId<HTMLButtonElement>("tutor-submit");
 
 let config: SceneConfig;
 let scene: THREE.Scene;
@@ -76,6 +95,8 @@ let playing = false;
 let previousFrame = performance.now();
 let frameCounter = 0;
 let fpsWindowStart = performance.now();
+let sessionId: string | null = null;
+let tutorBusy = false;
 
 const deg = THREE.MathUtils.degToRad;
 const steel = new THREE.MeshStandardMaterial({ color: 0x76817d, roughness: 0.54, metalness: 0.68 });
@@ -329,6 +350,100 @@ function bindControls(): void {
   }));
 }
 
+async function requestJson<T>(url: string, init: RequestInit): Promise<T> {
+  const response = await fetch(url, {
+    ...init,
+    headers: { Accept: "application/json", "Content-Type": "application/json" },
+  });
+  if (!response.ok) throw new Error(`API returned ${response.status}`);
+  return await response.json() as T;
+}
+
+function appendTutorMessage(
+  role: "learner" | "tutor" | "system",
+  message: string,
+  mode?: "llm" | "rule_fallback",
+  suggestedAction?: string | null,
+): HTMLElement {
+  const item = document.createElement("article");
+  item.className = `tutor-message ${role}`;
+  if (mode) item.dataset.mode = mode;
+  const label = document.createElement("span");
+  label.textContent = role === "learner"
+    ? "LEARNER"
+    : role === "system"
+      ? "SYSTEM"
+      : mode === "llm" ? "TUTOR / LLM" : "TUTOR / RULE FALLBACK";
+  const copy = document.createElement("p");
+  copy.textContent = message;
+  item.append(label, copy);
+  if (suggestedAction) {
+    const action = document.createElement("small");
+    action.textContent = `NEXT ACTION / ${suggestedAction.toUpperCase()}`;
+    item.append(action);
+  }
+  tutorLog.append(item);
+  tutorLog.scrollTop = tutorLog.scrollHeight;
+  return item;
+}
+
+function setTutorBusy(busy: boolean): void {
+  tutorBusy = busy;
+  tutorInput.disabled = busy || sessionId === null;
+  tutorSubmit.disabled = busy || sessionId === null;
+  tutorSubmit.textContent = busy ? "PROCESSING…" : "REQUEST HINT";
+}
+
+async function initialiseTutorSession(): Promise<void> {
+  try {
+    const session = await requestJson<SessionView>("/api/v0.4/sessions", {
+      method: "POST",
+      body: JSON.stringify({ case_id: config.case_id }),
+    });
+    sessionId = session.session_id;
+    tutorStatus.textContent = "READY";
+    tutorStatus.classList.remove("pending");
+    tutorLog.replaceChildren();
+    appendTutorMessage("system", "会话已建立。请先描述观察，再请求诊断提示。");
+    setTutorBusy(false);
+  } catch (error) {
+    tutorStatus.textContent = "OFFLINE";
+    appendTutorMessage("system", error instanceof Error ? error.message : "Tutor session unavailable");
+  }
+}
+
+function bindTutor(): void {
+  tutorForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const message = tutorInput.value.trim();
+    if (!message || sessionId === null || tutorBusy) return;
+    appendTutorMessage("learner", message);
+    tutorInput.value = "";
+    setTutorBusy(true);
+    tutorStatus.textContent = "THINKING";
+    try {
+      const response = await requestJson<TutorTurnResponse>(
+        `/api/v0.4/sessions/${encodeURIComponent(sessionId)}/tutor`,
+        { method: "POST", body: JSON.stringify({ message }) },
+      );
+      appendTutorMessage(
+        "tutor",
+        response.tutor.message,
+        response.tutor_mode,
+        response.tutor.suggested_action,
+      );
+      tutorStatus.textContent = response.tutor_mode === "llm" ? "LLM" : "SAFE FALLBACK";
+    } catch (error) {
+      appendTutorMessage("system", "Tutor 请求失败，请稍后重试。学习会话仍然保留。");
+      tutorStatus.textContent = "RETRY";
+      console.error(error);
+    } finally {
+      setTutorBusy(false);
+      tutorInput.focus();
+    }
+  });
+}
+
 function fitView(): void {
   camera.position.fromArray(config.camera.position);
   camera.zoom = config.camera.zoom / 76;
@@ -394,10 +509,12 @@ async function initialise(): Promise<void> {
       value: inspectSimulation,
     });
     bindControls();
+    bindTutor();
     updateInterface();
     loadingState.hidden = true;
     new ResizeObserver(resizeViewport).observe(viewport);
     requestAnimationFrame(animate);
+    await initialiseTutorSession();
   } catch (error) {
     loadingState.replaceChildren();
     const heading = document.createElement("strong");

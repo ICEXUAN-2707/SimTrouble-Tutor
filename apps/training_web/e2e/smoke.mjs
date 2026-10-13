@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { chromium } from "playwright-core";
+import { verifyTutorDeliveryScenarios } from "./tutor-scenarios.mjs";
 
 const browser = await chromium.launch({
   channel: "msedge",
@@ -13,6 +14,7 @@ try {
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(baseUrl, { waitUntil: "networkidle" });
   await page.locator("#loading-state").waitFor({ state: "hidden" });
+  await page.locator("#tutor-status").filter({ hasText: "READY" }).waitFor();
   assert.equal(await page.locator("#case-state").textContent(), "READY");
   assert.equal(await page.locator("#fault-callout").isHidden(), true);
 
@@ -25,6 +27,7 @@ try {
   assert.equal(await page.locator("#case-state").textContent(), "READY");
   assert.equal(await page.locator("#fault-callout").isHidden(), true);
   assert.deepEqual(errors, []);
+  await verifyTutorDeliveryScenarios(browser, baseUrl);
 
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await mobile.goto(baseUrl, { waitUntil: "networkidle" });
@@ -38,6 +41,7 @@ try {
   assert.equal(mobileWidth.scroll, mobileWidth.client);
   await mobile.close();
   console.log("E2E OK: READY -> FAILURE_OBSERVED -> RESET");
+  console.log("E2E OK: Tutor LLM success and timeout/malformed/leakage fallback delivery");
   console.log("E2E OK: 390px responsive viewport");
 } finally {
   await browser.close();

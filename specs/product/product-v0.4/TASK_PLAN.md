@@ -8,7 +8,8 @@
 - T0 product and contract baseline: complete.
 - T1 CAD scene and Session API: complete.
 - T2A bounded Tutor backend foundation: complete on the current task branch.
-- T2B Tutor frontend, Trace and runtime hardening: next.
+- T2B Tutor frontend, Trace and runtime hardening: implementation complete;
+  credential-gated live-provider smoke remains an explicit release check.
 - T3 Diagnosis, Evaluator, deterministic scoring and Report: not started.
 - T4 integrated MVP and release gate: not started.
 
@@ -50,6 +51,10 @@ before any model text is returned to the learner.
 - Add a server-side pre-diagnosis direct-answer leak policy.
 - Run one explicit real-DeepSeek smoke test outside CI.
 - Add browser tests for success, timeout, malformed output and leakage fallback.
+
+Implementation status: complete. The repository includes a credential-gated
+`tools/deepseek_tutor_smoke.py`; it must be run once with a real key before the
+phase gate, because CI and the repository do not contain provider credentials.
 
 ## T3 — Diagnosis and learning evaluation
 

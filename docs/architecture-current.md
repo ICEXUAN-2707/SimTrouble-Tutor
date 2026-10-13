@@ -2,7 +2,7 @@
 
 > Status: implemented
 > Authority: explanatory; Contracts and Phase Specs remain normative
-> Applies to: Product v0.4 after the bounded Tutor backend foundation
+> Applies to: Product v0.4 after the T2B Tutor delivery closeout
 
 ## Implemented modules
 
@@ -44,6 +44,8 @@ apps/training_api
         ├── policy.py       deterministic pedagogical decision
         ├── deepseek.py     optional DeepSeek Responses adapter
         ├── validation.py   contract, policy, action and leak checks
+        ├── telemetry.py    bounded latency/mode/retry/fallback metrics
+        ├── service.py      per-Session serialization and orchestration
         └── fallback.py     deterministic offline response
 
 apps/training_web
@@ -78,9 +80,12 @@ fallback. The LLM phrases a program-selected teaching decision and cannot
 mutate Session state or calculate final scores. Conversation storage and
 Sessions remain process-local.
 
-Tutor frontend binding, Tutor Trace events, Diagnosis, Evaluator, Skill Engine,
-Training Report runtime, persistence, authentication, physical simulation and
-multi-Case application flow are not implemented yet.
+Tutor frontend binding, approved request/delivery/fallback Trace events,
+per-Session serialization and public-safe delivery metrics are implemented.
+Diagnosis, Evaluator, Skill Engine, Training Report runtime, persistence,
+authentication, physical simulation and multi-Case application flow are not
+implemented yet. A real-provider smoke remains a credential-gated release
+check and is never run in CI.
 
 ## Test structure
 

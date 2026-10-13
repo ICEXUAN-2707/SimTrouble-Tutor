@@ -117,6 +117,49 @@ class CaseSession:
             self._trace_recorder.record_hypothesis_added(candidate)
         self._session = candidate
 
+    def record_tutor_requested(
+        self,
+        *,
+        policy_rule_id: str,
+        hint_level: int,
+        suggested_action: str | None,
+    ) -> None:
+        candidate = self._session.model_copy(deep=True)
+        self._trace_recorder.record_tutor_requested(
+            candidate,
+            policy_rule_id=policy_rule_id,
+            hint_level=hint_level,
+            suggested_action=suggested_action,
+        )
+        self._session = candidate
+
+    def record_tutor_delivered(self, *, latency_ms: int, retry_count: int) -> None:
+        candidate = self._session.model_copy(deep=True)
+        candidate.hint_count += 1
+        self._trace_recorder.record_tutor_delivered(
+            candidate,
+            latency_ms=latency_ms,
+            retry_count=retry_count,
+        )
+        self._session = candidate
+
+    def record_tutor_fallback(
+        self,
+        *,
+        latency_ms: int,
+        retry_count: int,
+        reason: str,
+    ) -> None:
+        candidate = self._session.model_copy(deep=True)
+        candidate.hint_count += 1
+        self._trace_recorder.record_tutor_fallback(
+            candidate,
+            latency_ms=latency_ms,
+            retry_count=retry_count,
+            reason=reason,
+        )
+        self._session = candidate
+
     def _release_evidence(self, evidence_id: str) -> None:
         """EvidenceManager-only atomic release after Case validation."""
 

@@ -11,7 +11,7 @@ from pydantic import ValidationError
 
 from ..learning_models import TutorRequest, TutorResponse
 from .policy import TutorPolicyDecision
-from .ports import TutorProviderError
+from .ports import TutorGeneration, TutorProviderError
 from .settings import DeepSeekSettings
 
 _SYSTEM_INSTRUCTION = """
@@ -46,7 +46,7 @@ class DeepSeekResponsesAdapter:
         self,
         request: TutorRequest,
         decision: TutorPolicyDecision,
-    ) -> TutorResponse:
+    ) -> TutorGeneration:
         payload = self._payload(request, decision)
         headers = {
             "Authorization": f"Bearer {self._settings.api_key}",
@@ -68,7 +68,9 @@ class DeepSeekResponsesAdapter:
                     await self._wait_before_retry(attempt)
                     continue
                 raise TutorProviderError(
-                    "deepseek_transport_error", retryable=True
+                    "deepseek_transport_error",
+                    retryable=True,
+                    attempts=attempt + 1,
                 ) from exc
 
             if response.status_code in _TRANSIENT_STATUS_CODES:
@@ -76,12 +78,29 @@ class DeepSeekResponsesAdapter:
                     await self._wait_before_retry(attempt)
                     continue
                 raise TutorProviderError(
-                    f"deepseek_http_{response.status_code}", retryable=True
+                    f"deepseek_http_{response.status_code}",
+                    retryable=True,
+                    attempts=attempt + 1,
                 )
             if response.status_code >= 400:
-                raise TutorProviderError(f"deepseek_http_{response.status_code}")
-            return self._parse_response(response)
-        raise TutorProviderError("deepseek_retry_exhausted", retryable=True)
+                raise TutorProviderError(
+                    f"deepseek_http_{response.status_code}",
+                    attempts=attempt + 1,
+                )
+            try:
+                parsed = self._parse_response(response)
+            except TutorProviderError as exc:
+                raise TutorProviderError(
+                    exc.code,
+                    retryable=exc.retryable,
+                    attempts=attempt + 1,
+                ) from exc
+            return TutorGeneration(response=parsed, attempts=attempt + 1)
+        raise TutorProviderError(
+            "deepseek_retry_exhausted",
+            retryable=True,
+            attempts=self._settings.max_retries + 1,
+        )
 
     def _payload(
         self,

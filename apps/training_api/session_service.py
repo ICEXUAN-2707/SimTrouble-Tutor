@@ -118,6 +118,55 @@ class SessionService:
 
         return self._repository.mutate_atomically(session_id, command)
 
+    def record_tutor_requested(
+        self,
+        session_id: str,
+        *,
+        policy_rule_id: str,
+        hint_level: int,
+        suggested_action: str | None,
+    ) -> None:
+        self._repository.mutate(
+            session_id,
+            lambda aggregate: aggregate.record_tutor_requested(
+                policy_rule_id=policy_rule_id,
+                hint_level=hint_level,
+                suggested_action=suggested_action,
+            ),
+        )
+
+    def record_tutor_delivered(
+        self,
+        session_id: str,
+        *,
+        latency_ms: int,
+        retry_count: int,
+    ) -> None:
+        self._repository.mutate(
+            session_id,
+            lambda aggregate: aggregate.record_tutor_delivered(
+                latency_ms=latency_ms,
+                retry_count=retry_count,
+            ),
+        )
+
+    def record_tutor_fallback(
+        self,
+        session_id: str,
+        *,
+        latency_ms: int,
+        retry_count: int,
+        reason: str,
+    ) -> None:
+        self._repository.mutate(
+            session_id,
+            lambda aggregate: aggregate.record_tutor_fallback(
+                latency_ms=latency_ms,
+                retry_count=retry_count,
+                reason=reason,
+            ),
+        )
+
     def _guard_evidence_exists(
         self,
         aggregate: CaseSession,

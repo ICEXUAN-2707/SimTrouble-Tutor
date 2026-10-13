@@ -247,6 +247,17 @@ Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:8000/api/v0.4/sessions/$($
 
 ## 7. 怎样运行测试
 
+真实供应商 smoke（不会打印 API Key、原始提示词或模型正文）：
+
+~~~powershell
+$env:SIMTROUBLE_LLM_ENABLED = "true"
+$env:DEEPSEEK_API_KEY = "替换成你自己的Key"
+.\.venv\Scripts\python.exe -B tools/deepseek_tutor_smoke.py
+~~~
+
+脚本只有在返回 `tutor_mode=llm`、结构化响应通过程序校验时才会打印
+`PASS`；如果触发规则回退，会仅显示脱敏后的原因代码。
+
 运行全部 Python 测试：
 
 ~~~powershell

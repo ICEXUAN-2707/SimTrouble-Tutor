@@ -59,7 +59,8 @@ Product v0.4
 - Demo v0.1：模块化壳层、ST-001 HTTP E2E 与启动烟测已实现；不代表 Phase 4–8 完成。
 - Product v0.4 T1：CAD 场景、Case 驱动动画、Scene API 与 Session API 已实现。
 - Product v0.4 T2A：Tutor Context、确定性 Policy、DeepSeek Adapter、输出校验和规则回退已实现。
-- Product v0.4 T2B/T3：Tutor 前端与 Trace、Diagnosis、Evaluator、五维评分和 Report 尚未实现。
+- Product v0.4 T2B：Tutor 前端、同会话串行、公开安全 Trace、运行指标与泄漏回退已实现；真实 Key smoke 是发布前人工检查。
+- Product v0.4 T3：Diagnosis、Evaluator、五维评分和 Report 尚未实现。
 
 | 能力 | 当前事实 |
 |---|---|
@@ -70,7 +71,7 @@ Product v0.4
 | ST-001 CAD 动画 | 已由 Scene JSON 驱动并通过 Product 浏览器烟测 |
 | Product Session API | 已实现 Session、Evidence、Hypothesis 和公开安全投影 |
 | 五维 Skill 评分 | 未实现 |
-| LLM Tutor | 后端基础已实现；前端、Trace、真实 Key smoke 和进一步安全加固待完成 |
+| LLM Tutor | T2B 代码闭环已实现；真实 Key smoke 需在发布前人工执行 |
 | Mock / 真实物理仿真 | 确定性 Three.js 动画已实现；物理仿真不在当前 MVP |
 | 数据库与账号体系 | 未实现 |
 

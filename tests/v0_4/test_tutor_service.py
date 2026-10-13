@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+import asyncio
 
 from apps.training_api.learning_models import (
     TutorAction,
@@ -9,7 +10,8 @@ from apps.training_api.learning_models import (
 )
 from apps.training_api.session_service import SessionService
 from apps.training_api.tutor.policy import TutorPolicyDecision
-from apps.training_api.tutor.ports import TutorProviderError
+from apps.training_api.session_repository import SessionRepository
+from apps.training_api.tutor.ports import TutorGeneration, TutorProviderError
 from apps.training_api.tutor.service import TutorService
 
 
@@ -30,7 +32,7 @@ class CapturingProvider:
         self,
         request: TutorRequest,
         decision: TutorPolicyDecision,
-    ) -> TutorResponse:
+    ) -> TutorGeneration:
         self.requests.append(request)
         if self.fail:
             raise TutorProviderError("provider_unavailable", retryable=True)
@@ -39,13 +41,40 @@ class CapturingProvider:
             if self.invalid_action
             else decision.suggested_action
         )
-        return TutorResponse(
+        return TutorGeneration(
+            response=TutorResponse(
+                contract_version="0.4.0",
+                intent=decision.intent,
+                message=self.message,
+                hint_level=decision.hint_level,
+                suggested_action=action,
+            ),
+        )
+
+
+class ConcurrentProvider(CapturingProvider):
+    def __init__(self) -> None:
+        super().__init__()
+        self.active = 0
+        self.max_active = 0
+
+    async def generate(
+        self,
+        request: TutorRequest,
+        decision: TutorPolicyDecision,
+    ) -> TutorGeneration:
+        self.requests.append(request)
+        self.active += 1
+        self.max_active = max(self.max_active, self.active)
+        await asyncio.sleep(0.01)
+        self.active -= 1
+        return TutorGeneration(response=TutorResponse(
             contract_version="0.4.0",
             intent=decision.intent,
             message=self.message,
             hint_level=decision.hint_level,
-            suggested_action=action,
-        )
+            suggested_action=decision.suggested_action,
+        ))
 
 
 class TutorServiceTests(unittest.IsolatedAsyncioTestCase):
@@ -89,6 +118,7 @@ class TutorServiceTests(unittest.IsolatedAsyncioTestCase):
             CapturingProvider(invalid_action=True),
             CapturingProvider(fail=True),
             CapturingProvider(message="The ground_truth field says the answer."),
+            CapturingProvider(message="The correct diagnosis is grasp failure."),
         ):
             with self.subTest(provider=provider):
                 sessions = SessionService()
@@ -101,6 +131,46 @@ class TutorServiceTests(unittest.IsolatedAsyncioTestCase):
                     TutorAction.INSPECT_EVIDENCE,
                     result.tutor.suggested_action,
                 )
+
+    async def test_same_session_calls_are_serialized_and_keep_history_order(self) -> None:
+        sessions = SessionService()
+        view = sessions.create("ST-001")
+        provider = ConcurrentProvider()
+        service = TutorService(sessions, provider=provider)
+
+        await asyncio.gather(
+            service.ask(view.session_id, "First"),
+            service.ask(view.session_id, "Second"),
+        )
+
+        self.assertEqual(1, provider.max_active)
+        self.assertEqual(1, len(provider.requests[0].messages))
+        self.assertEqual(3, len(provider.requests[1].messages))
+
+    async def test_trace_and_metrics_are_public_safe(self) -> None:
+        repository = SessionRepository()
+        sessions = SessionService(repository=repository)
+        view = sessions.create("ST-001")
+        service = TutorService(
+            sessions,
+            provider=CapturingProvider(fail=True),
+            clock=iter((10.0, 10.125)).__next__,
+        )
+
+        await service.ask(view.session_id, "Do not store this learner prompt")
+
+        trace = repository.inspect(view.session_id, lambda item: item.session.trace)
+        self.assertEqual(
+            ["TutorRequested", "TutorFallback"],
+            [event.action_type for event in trace[-2:]],
+        )
+        self.assertEqual(125, trace[-1].result["latency_ms"])
+        self.assertEqual("provider_unavailable", trace[-1].result["reason"])
+        serialized = str([event.model_dump(mode="json") for event in trace[-2:]])
+        self.assertNotIn("Do not store this learner prompt", serialized)
+        metric = service.metrics.snapshot(view.session_id)[0]
+        self.assertEqual(125, metric.latency_ms)
+        self.assertEqual("provider_unavailable", metric.fallback_reason)
 
 
 if __name__ == "__main__":

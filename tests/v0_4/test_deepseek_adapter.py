@@ -65,7 +65,8 @@ class DeepSeekAdapterTests(unittest.IsolatedAsyncioTestCase):
         )
         result = await adapter.generate(self.request, self.decision)
 
-        self.assertEqual(self.tutor_response, result)
+        self.assertEqual(self.tutor_response, result.response)
+        self.assertEqual(1, result.attempts)
         self.assertEqual("https://deepseek.test/responses", captured["url"])
         self.assertEqual("Bearer test-key", captured["authorization"])
         self.assertEqual("deepseek-flash", captured["body"]["model"])
@@ -93,8 +94,9 @@ class DeepSeekAdapterTests(unittest.IsolatedAsyncioTestCase):
             transport=httpx.MockTransport(handler),
             retry_delay_seconds=0,
         )
-        await adapter.generate(self.request, self.decision)
+        result = await adapter.generate(self.request, self.decision)
         self.assertEqual(2, attempts)
+        self.assertEqual(2, result.attempts)
 
     async def test_auth_error_is_not_retried(self) -> None:
         attempts = 0
@@ -112,6 +114,25 @@ class DeepSeekAdapterTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaisesRegex(TutorProviderError, "deepseek_http_401"):
             await adapter.generate(self.request, self.decision)
         self.assertEqual(1, attempts)
+
+    async def test_timeout_retries_once_and_reports_attempt_count(self) -> None:
+        attempts = 0
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal attempts
+            attempts += 1
+            raise httpx.ReadTimeout("timed out", request=request)
+
+        adapter = DeepSeekResponsesAdapter(
+            self.settings,
+            transport=httpx.MockTransport(handler),
+            retry_delay_seconds=0,
+        )
+        with self.assertRaises(TutorProviderError) as raised:
+            await adapter.generate(self.request, self.decision)
+        self.assertEqual("deepseek_transport_error", raised.exception.code)
+        self.assertEqual(2, raised.exception.attempts)
+        self.assertEqual(2, attempts)
 
     async def test_invalid_contract_is_rejected(self) -> None:
         response = {

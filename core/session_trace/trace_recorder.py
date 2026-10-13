@@ -21,6 +21,9 @@ TraceActionType = Literal[
     "HypothesisAdded",
     "HypothesisUpdated",
     "HypothesisRejected",
+    "TutorRequested",
+    "TutorDelivered",
+    "TutorFallback",
     "SessionFinished",
 ]
 
@@ -141,6 +144,63 @@ class SessionTraceRecorder:
             session,
             action_type="HypothesisRejected",
             result={"status": "rejected", "reason": "empty_hypothesis"},
+        )
+
+    def record_tutor_requested(
+        self,
+        session: LearnerSession,
+        *,
+        policy_rule_id: str,
+        hint_level: int,
+        suggested_action: str | None,
+    ) -> None:
+        self._record(
+            session,
+            action_type="TutorRequested",
+            result={
+                "status": "requested",
+                "policy_rule_id": policy_rule_id,
+                "hint_level": hint_level,
+                "suggested_action": suggested_action,
+            },
+        )
+
+    def record_tutor_delivered(
+        self,
+        session: LearnerSession,
+        *,
+        latency_ms: int,
+        retry_count: int,
+    ) -> None:
+        self._record(
+            session,
+            action_type="TutorDelivered",
+            result={
+                "status": "delivered",
+                "mode": "llm",
+                "latency_ms": latency_ms,
+                "retry_count": retry_count,
+            },
+        )
+
+    def record_tutor_fallback(
+        self,
+        session: LearnerSession,
+        *,
+        latency_ms: int,
+        retry_count: int,
+        reason: str,
+    ) -> None:
+        self._record(
+            session,
+            action_type="TutorFallback",
+            result={
+                "status": "fallback",
+                "mode": "rule_fallback",
+                "latency_ms": latency_ms,
+                "retry_count": retry_count,
+                "reason": reason,
+            },
         )
 
     def _record(
