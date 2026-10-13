@@ -2,7 +2,7 @@
 
 > Status: implemented
 > Authority: explanatory; Contracts and Phase Specs remain normative
-> Applies to: Demo v0.1 integration line after D1
+> Applies to: Product v0.4 after the bounded Tutor backend foundation
 
 ## Implemented modules
 
@@ -34,6 +34,25 @@ apps/demo
   └── st001_judge.py       deterministic ST-001 Demo-only judge
              │
              └──────────── imports official core/ only
+
+apps/training_api
+  ├── main.py               FastAPI Scene / Session / Tutor routes
+  ├── session_service.py    authoritative Session application commands
+  ├── session_projector.py  learner-safe SessionView projection
+  └── tutor/
+        ├── context.py      learner-safe TutorRequest projection
+        ├── policy.py       deterministic pedagogical decision
+        ├── deepseek.py     optional DeepSeek Responses adapter
+        ├── validation.py   contract, policy, action and leak checks
+        └── fallback.py     deterministic offline response
+
+apps/training_web
+  ├── src/main.ts           Three.js CAD scene and deterministic playback
+  ├── src/styles.css        responsive CAD workspace
+  └── e2e/                  desktop and mobile browser smoke
+
+contracts/v0.4
+  └── Tutor, Diagnosis, Evaluator and Training Report schemas
 ```
 
 ## Authority boundaries
@@ -50,7 +69,18 @@ apps/demo
 
 ## Current runtime limitations
 
-The standard-library Demo server is a pre-release local adapter, not the planned FastAPI/Next.js application. The repository has no Skill engine, LangGraph/LLM Tutor, Simulation Adapter, persistence, authentication or multi-Case Demo. The local `zjh/` delivery package is an untracked migration input, not a second project or source of truth.
+The standard-library Demo remains a rollback adapter, not the Product v0.4
+application. Product v0.4 now has FastAPI Scene, Session, Evidence, Hypothesis
+and Tutor routes plus a deterministic Three.js CAD scene.
+
+The Tutor backend can call DeepSeek, but defaults to a deterministic rule
+fallback. The LLM phrases a program-selected teaching decision and cannot
+mutate Session state or calculate final scores. Conversation storage and
+Sessions remain process-local.
+
+Tutor frontend binding, Tutor Trace events, Diagnosis, Evaluator, Skill Engine,
+Training Report runtime, persistence, authentication, physical simulation and
+multi-Case application flow are not implemented yet.
 
 ## Test structure
 
@@ -60,3 +90,5 @@ The standard-library Demo server is a pre-release local adapter, not the planned
 - `tests/session_trace/`: Trace vocabulary, timestamps, atomicity and leakage;
 - `tests/phase3_integration/`: explicit ST-001 Core path.
 - `tests/demo/`: ST-001 HTTP end-to-end path and real subprocess startup smoke.
+- `tests/v0_4/`: Scene, Session, Tutor, provider-failure and Report contract parity.
+- `apps/training_web/e2e/`: deterministic CAD playback and responsive browser smoke.

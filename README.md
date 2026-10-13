@@ -29,7 +29,7 @@ Simulation          Mock Adapter / later Gazebo or Isaac Adapter
 - Skill Engine 使用可解释规则，LLM 不直接决定最终分数；
 - Core 不依赖具体仿真 SDK，真实仿真只能通过冻结的 Adapter 边界接入。
 
-当前实际实现包含 Phase 1–3 的契约与 Core，以及隔离的初版 Demo 适配层：
+当前实际实现包含 Phase 1–3 的契约与 Core、隔离的初版 Demo，以及 Product v0.4 的 CAD、Session 和受约束 Tutor 后端基础：
 
 ```text
 contracts / data
@@ -40,6 +40,12 @@ Training Core
   └─ Append-only Session Trace
        ↑
 apps/demo（静态页面 / HTTP / 内存编排 / Demo-only 规则）
+       ↑
+Product v0.4
+  ├─ apps/training_web（Vite / TypeScript / Three.js CAD 工作区）
+  ├─ apps/training_api（FastAPI Scene / Session / Tutor API）
+  ├─ apps/training_api/tutor（Policy / DeepSeek Adapter / Rule fallback）
+  └─ contracts/v0.4（Tutor / Diagnosis / Evaluator / Report）
 ```
 
 当前架构与目标架构分别见 [Current Architecture](docs/architecture-current.md) 和 [Target Architecture](docs/architecture-target.md)。
@@ -51,6 +57,9 @@ apps/demo（静态页面 / HTTP / 内存编排 / Demo-only 规则）
 - Phase 2：Training Core 已实现并通过回归测试；
 - Phase 3：Diagnostic State Machine + 内存 Append-only Trace 已实现、通过 57 项回归并合入 `develop`；
 - Demo v0.1：模块化壳层、ST-001 HTTP E2E 与启动烟测已实现；不代表 Phase 4–8 完成。
+- Product v0.4 T1：CAD 场景、Case 驱动动画、Scene API 与 Session API 已实现。
+- Product v0.4 T2A：Tutor Context、确定性 Policy、DeepSeek Adapter、输出校验和规则回退已实现。
+- Product v0.4 T2B/T3：Tutor 前端与 Trace、Diagnosis、Evaluator、五维评分和 Report 尚未实现。
 
 | 能力 | 当前事实 |
 |---|---|
@@ -58,9 +67,11 @@ apps/demo（静态页面 / HTTP / 内存编排 / Demo-only 规则）
 | Diagnostic State Machine | 已实现 |
 | Append-only Session Trace | 已实现 |
 | ST-001 浏览器演示 | 已复用官方 Core，并由 HTTP E2E 与启动烟测覆盖 |
+| ST-001 CAD 动画 | 已由 Scene JSON 驱动并通过 Product 浏览器烟测 |
+| Product Session API | 已实现 Session、Evidence、Hypothesis 和公开安全投影 |
 | 五维 Skill 评分 | 未实现 |
-| LangGraph / LLM Tutor | 未实现 |
-| Mock / 真实仿真 | 未实现 |
+| LLM Tutor | 后端基础已实现；前端、Trace、真实 Key smoke 和进一步安全加固待完成 |
+| Mock / 真实物理仿真 | 确定性 Three.js 动画已实现；物理仿真不在当前 MVP |
 | 数据库与账号体系 | 未实现 |
 
 当前权威基线与阶段规格：
@@ -104,6 +115,32 @@ python -m venv .venv
 ```
 
 默认仅监听 `http://127.0.0.1:8000`。该 Demo 使用进程内匿名会话、确定性规则 Tutor 和 ST-001 专用判定；它不会推进正式诊断阶段，也不提供五维评分、在线 LLM、物理仿真或持久化。
+
+## 运行 Product v0.4
+
+在仓库根目录启动 API：
+
+~~~powershell
+.\.venv\Scripts\python.exe -B -m apps.training_api
+~~~
+
+另开终端启动 CAD 前端：
+
+~~~powershell
+Set-Location apps\training_web
+npm.cmd ci
+npm.cmd run dev
+~~~
+
+打开 `http://127.0.0.1:5174`。不配置 DeepSeek 时，Tutor API 会使用确定性规则回退。真实 DeepSeek 调用仅从环境变量读取密钥：
+
+~~~powershell
+$env:SIMTROUBLE_LLM_ENABLED = "true"
+$env:DEEPSEEK_API_KEY = "替换成自己的Key"
+$env:DEEPSEEK_MODEL = "deepseek-flash"
+~~~
+
+详细学习材料见 [LLM Tutor + DeepSeek 零基础教学手册](docs/guides/llm-tutor-deepseek-beginner-guide.md)。
 
 ## Git 协作
 
