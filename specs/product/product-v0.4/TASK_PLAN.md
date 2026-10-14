@@ -10,7 +10,7 @@
 - T2A bounded Tutor backend foundation: complete on the current task branch.
 - T2B Tutor frontend, Trace and runtime hardening: implementation complete;
   credential-gated live-provider smoke remains an explicit release check.
-- T3 Diagnosis, Evaluator, deterministic scoring and Report: not started.
+- T3 Diagnosis, Evaluator, deterministic scoring and Report: implementation complete on the current task branch.
 - T4 integrated MVP and release gate: not started.
 
 ## T0 — Baseline
@@ -66,9 +66,21 @@ phase gate, because CI and the repository do not contain provider credentials.
 - Produce all five dimensions with scored or not_assessed status.
 - Build a deterministic TrainingReportV04 and expose the Report route.
 
+Implementation status: complete. Diagnosis is create-once and accepted only in
+UPDATE. Evaluation/report generation is atomic with Session completion; invalid
+stages and unreleased Evidence leave the authoritative Trace unchanged. The
+Evaluator emits qualitative findings only, while the versioned program engine
+owns numeric scoring. ST-001 Safety is `not_assessed` with zero effective
+weight.
+
 ## T4 — Integrated MVP
 
 - Bind animation, Evidence, Hypothesis, Tutor, Diagnosis and Report into one page.
+- Add a one-click local launcher with backend-only secret preflight: read the
+  DeepSeek key from an environment variable or ignored local secret store,
+  start API and web, and keep credentials out of frontend assets and Git.
+- Complete one real-DeepSeek smoke test before the release gate; rule fallback
+  remains available when the provider is unavailable.
 - Verify correct, incorrect, insufficient and repeated submissions.
 - Verify Safety=not_assessed for ST-001.
 - Verify animation replay never changes learning Trace or scores.

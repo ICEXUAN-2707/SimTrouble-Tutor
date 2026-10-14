@@ -29,7 +29,7 @@ Simulation          Mock Adapter / later Gazebo or Isaac Adapter
 - Skill Engine 使用可解释规则，LLM 不直接决定最终分数；
 - Core 不依赖具体仿真 SDK，真实仿真只能通过冻结的 Adapter 边界接入。
 
-当前实际实现包含 Phase 1–3 的契约与 Core、隔离的初版 Demo，以及 Product v0.4 的 CAD、Session 和受约束 Tutor 后端基础：
+当前实际实现包含 Phase 1–3 的契约与 Core、隔离的初版 Demo，以及 Product v0.4 的 CAD、Session、受约束 Tutor 与确定性诊断报告后端：
 
 ```text
 contracts / data
@@ -43,8 +43,9 @@ apps/demo（静态页面 / HTTP / 内存编排 / Demo-only 规则）
        ↑
 Product v0.4
   ├─ apps/training_web（Vite / TypeScript / Three.js CAD 工作区）
-  ├─ apps/training_api（FastAPI Scene / Session / Tutor API）
+  ├─ apps/training_api（FastAPI Scene / Session / Tutor / Diagnosis / Report API）
   ├─ apps/training_api/tutor（Policy / DeepSeek Adapter / Rule fallback）
+  ├─ apps/training_api/evaluation（Evaluator / Skill Engine / Report Builder）
   └─ contracts/v0.4（Tutor / Diagnosis / Evaluator / Report）
 ```
 
@@ -60,7 +61,7 @@ Product v0.4
 - Product v0.4 T1：CAD 场景、Case 驱动动画、Scene API 与 Session API 已实现。
 - Product v0.4 T2A：Tutor Context、确定性 Policy、DeepSeek Adapter、输出校验和规则回退已实现。
 - Product v0.4 T2B：Tutor 前端、同会话串行、公开安全 Trace、运行指标与泄漏回退已实现；真实 Key smoke 是发布前人工检查。
-- Product v0.4 T3：Diagnosis、Evaluator、五维评分和 Report 尚未实现。
+- Product v0.4 T3：一次性 Diagnosis、定性 Evaluator、确定性五维评分和 Report 后端已实现。
 
 | 能力 | 当前事实 |
 |---|---|
@@ -69,8 +70,8 @@ Product v0.4
 | Append-only Session Trace | 已实现 |
 | ST-001 浏览器演示 | 已复用官方 Core，并由 HTTP E2E 与启动烟测覆盖 |
 | ST-001 CAD 动画 | 已由 Scene JSON 驱动并通过 Product 浏览器烟测 |
-| Product Session API | 已实现 Session、Evidence、Hypothesis 和公开安全投影 |
-| 五维 Skill 评分 | 未实现 |
+| Product Session API | 已实现 Session、Evidence、Hypothesis、Diagnosis、Report 和公开安全投影 |
+| 五维 Skill 评分 | T3 已实现；ST-001 Safety 因无可观测机会标记为 `not_assessed` |
 | LLM Tutor | T2B 代码闭环已实现；真实 Key smoke 需在发布前人工执行 |
 | Mock / 真实物理仿真 | 确定性 Three.js 动画已实现；物理仿真不在当前 MVP |
 | 数据库与账号体系 | 未实现 |

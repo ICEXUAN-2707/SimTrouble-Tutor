@@ -7,6 +7,12 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from core.errors import EvidenceNotFoundError
 
+from .evaluation import DiagnosisService, build_diagnosis_service
+from .evaluation.repository import (
+    DiagnosisAlreadySubmittedError,
+    ReportNotReadyError,
+)
+from .learning_models import DiagnosisSubmission, TrainingReportV04
 from .models import SceneConfiguration
 from .scene_service import SceneNotFoundError, SceneRepository
 from .session_models import (
@@ -21,6 +27,7 @@ from .session_models import (
 from .session_repository import SessionNotFoundError
 from .session_service import (
     CaseNotFoundError,
+    DiagnosisEvidenceError,
     SessionService,
     SessionStageConflictError,
 )
@@ -31,10 +38,12 @@ def create_app(
     repository: SceneRepository | None = None,
     session_service: SessionService | None = None,
     tutor_service: TutorService | None = None,
+    diagnosis_service: DiagnosisService | None = None,
 ) -> FastAPI:
     scenes = repository or SceneRepository()
     sessions = session_service or SessionService()
     tutor = tutor_service or build_tutor_service(sessions)
+    diagnosis = diagnosis_service or build_diagnosis_service(sessions)
     application = FastAPI(
         title="SimTrouble Tutor API",
         version="0.4.0",
@@ -127,6 +136,44 @@ def create_app(
             return await tutor.ask(session_id, request.message)
         except SessionNotFoundError as exc:
             raise HTTPException(status_code=404, detail="session_not_found") from exc
+
+    @application.post(
+        "/api/v0.4/sessions/{session_id}/diagnosis",
+        response_model=SessionView,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def submit_diagnosis(
+        session_id: str,
+        request: DiagnosisSubmission,
+    ) -> SessionView:
+        try:
+            return diagnosis.submit(session_id, request)
+        except SessionNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="session_not_found") from exc
+        except SessionStageConflictError as exc:
+            raise HTTPException(status_code=409, detail="invalid_session_stage") from exc
+        except DiagnosisAlreadySubmittedError as exc:
+            raise HTTPException(
+                status_code=409,
+                detail="diagnosis_already_submitted",
+            ) from exc
+        except DiagnosisEvidenceError as exc:
+            raise HTTPException(
+                status_code=422,
+                detail="invalid_evidence_reference",
+            ) from exc
+
+    @application.get(
+        "/api/v0.4/sessions/{session_id}/report",
+        response_model=TrainingReportV04,
+    )
+    def get_report(session_id: str) -> TrainingReportV04:
+        try:
+            return diagnosis.report(session_id)
+        except SessionNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="session_not_found") from exc
+        except ReportNotReadyError as exc:
+            raise HTTPException(status_code=409, detail="report_not_ready") from exc
 
     return application
 

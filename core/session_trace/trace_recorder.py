@@ -24,6 +24,9 @@ TraceActionType = Literal[
     "TutorRequested",
     "TutorDelivered",
     "TutorFallback",
+    "DiagnosisSubmitted",
+    "DiagnosisEvaluated",
+    "ReportGenerated",
     "SessionFinished",
 ]
 
@@ -201,6 +204,47 @@ class SessionTraceRecorder:
                 "retry_count": retry_count,
                 "reason": reason,
             },
+        )
+
+    def record_diagnosis_submitted(
+        self,
+        session: LearnerSession,
+        *,
+        diagnosis_type: str,
+        cited_evidence_ids: tuple[str, ...],
+    ) -> None:
+        self._record(
+            session,
+            action_type="DiagnosisSubmitted",
+            result={
+                "status": "submitted",
+                "diagnosis_type": diagnosis_type,
+                "cited_evidence_ids": list(cited_evidence_ids),
+            },
+        )
+
+    def record_diagnosis_evaluated(
+        self,
+        session: LearnerSession,
+        *,
+        assessment: str,
+    ) -> None:
+        self._record(
+            session,
+            action_type="DiagnosisEvaluated",
+            result={"status": "evaluated", "assessment": assessment},
+        )
+
+    def record_report_generated(
+        self,
+        session: LearnerSession,
+        *,
+        rubric_version: str,
+    ) -> None:
+        self._record(
+            session,
+            action_type="ReportGenerated",
+            result={"status": "generated", "rubric_version": rubric_version},
         )
 
     def _record(

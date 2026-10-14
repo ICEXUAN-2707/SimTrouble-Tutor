@@ -160,6 +160,36 @@ class CaseSession:
         )
         self._session = candidate
 
+    def record_diagnosis_submitted(
+        self,
+        *,
+        diagnosis_type: str,
+        cited_evidence_ids: tuple[str, ...],
+    ) -> None:
+        candidate = self._session.model_copy(deep=True)
+        self._trace_recorder.record_diagnosis_submitted(
+            candidate,
+            diagnosis_type=diagnosis_type,
+            cited_evidence_ids=cited_evidence_ids,
+        )
+        self._session = candidate
+
+    def record_diagnosis_evaluated(self, *, assessment: str) -> None:
+        candidate = self._session.model_copy(deep=True)
+        self._trace_recorder.record_diagnosis_evaluated(
+            candidate,
+            assessment=assessment,
+        )
+        self._session = candidate
+
+    def record_report_generated(self, *, rubric_version: str) -> None:
+        candidate = self._session.model_copy(deep=True)
+        self._trace_recorder.record_report_generated(
+            candidate,
+            rubric_version=rubric_version,
+        )
+        self._session = candidate
+
     def _release_evidence(self, evidence_id: str) -> None:
         """EvidenceManager-only atomic release after Case validation."""
 

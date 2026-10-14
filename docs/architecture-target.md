@@ -41,6 +41,6 @@ The project remains one deployable application for V0. It does not introduce mic
 | standard-library HTTP adapter | FastAPI adapter | none |
 | rule-based Tutor | LangGraph + optional LLM | none |
 | process-local sessions | approved SQLite persistence | dedicated future boundary |
-| ST-001 deterministic judge | approved diagnosis/Skill rules | dedicated later phase |
+| ST-001 deterministic judge | Product v0.4 diagnosis/Skill engine | implemented in T3 without changing Core contracts |
 
 The initial Demo may use these temporary adapters only when its UI and release notes label them as Demo-only and do not claim unimplemented V0 capabilities.
