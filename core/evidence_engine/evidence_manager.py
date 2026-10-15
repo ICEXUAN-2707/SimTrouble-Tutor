@@ -11,25 +11,26 @@ from core.models import ReleasedEvidence
 
 class EvidenceManager:
     def request(self, case_session: CaseSession, evidence_id: str) -> ReleasedEvidence:
+        authoritative_case = case_session.authoritative_case
         evidence = next(
             (
                 item
-                for item in case_session.authoritative_case.evidence
+                for item in authoritative_case.evidence
                 if item.id == evidence_id
             ),
             None,
         )
         if evidence is None:
+            case_session._deny_evidence(evidence_id)
             raise EvidenceNotFoundError(
                 f"evidence {evidence_id!r} is not present in case "
-                f"{case_session.authoritative_case.case_id}"
+                f"{authoritative_case.case_id}"
             )
 
-        if evidence.id not in case_session.session.evidence_seen:
-            case_session.session.evidence_seen.append(evidence.id)
-
-        return ReleasedEvidence(
+        released = ReleasedEvidence(
             id=evidence.id,
             type=evidence.type,
             content=deepcopy(evidence.content),
         )
+        case_session._release_evidence(evidence.id)
+        return released

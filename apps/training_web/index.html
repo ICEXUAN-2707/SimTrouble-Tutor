@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#111514" />
+    <meta name="description" content="SimTrouble Tutor CAD-style fault training workspace" />
+    <title>SimTrouble Tutor / CAD Training Workspace</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <div class="brand-block">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <div><p class="product-name">SIMTROUBLE</p><p class="product-subtitle">DIAGNOSTIC TRAINING SYSTEM</p></div>
+        </div>
+        <div class="case-heading">
+          <span class="case-code" id="case-code">ST-001</span><span class="case-divider"></span>
+          <strong id="case-title">LOADING WORKCELL</strong>
+        </div>
+        <div class="system-status"><span class="status-dot"></span><span>LOCAL CAD MODE</span><span class="build-label">BUILD 0.4</span></div>
+      </header>
+      <main class="workspace">
+        <nav class="toolrail" aria-label="CAD view tools">
+          <button class="tool active" type="button" data-tool="orbit" aria-label="Orbit view" title="Orbit view">OR</button>
+          <button class="tool" type="button" data-tool="pan" aria-label="Pan view" title="Pan view">PN</button>
+          <button class="tool" type="button" data-tool="grid" aria-label="Toggle grid" title="Toggle grid">GR</button>
+          <button class="tool" type="button" data-tool="axes" aria-label="Toggle axes" title="Toggle axes">AX</button>
+          <span class="toolrail-spacer"></span>
+          <button class="tool" type="button" data-tool="fit" aria-label="Fit view" title="Fit view">FT</button>
+        </nav>
+        <section class="viewport-shell" aria-labelledby="viewport-title">
+          <div class="viewport-head">
+            <div><span class="panel-index">01</span><span class="panel-title" id="viewport-title">WORKCELL VIEWPORT</span></div>
+            <div class="viewport-meta"><span>ORTHOGRAPHIC</span><span>MM</span><span id="fps-label">-- FPS</span></div>
+          </div>
+          <div id="cad-viewport" class="cad-viewport" role="img" aria-label="3D industrial robot workcell simulation">
+            <div class="crosshair" aria-hidden="true"></div>
+            <div class="view-cube" aria-hidden="true"><span class="cube-top">TOP</span><span class="cube-front">FRONT</span><span class="cube-side">RIGHT</span></div>
+            <div class="viewport-label">WCS / 0,0,0</div>
+            <div class="fault-callout" id="fault-callout" hidden><span class="callout-line"></span><div><small>OBSERVATION</small><strong>WORKPIECE DID NOT FOLLOW GRIPPER</strong></div></div>
+            <div class="loading-state" id="loading-state"><span class="loading-spinner"></span><strong>BUILDING CAD SCENE</strong><small>Reading ST-001 public scene configuration</small></div>
+          </div>
+          <div class="viewport-foot"><span>LEFT: ORBIT / RIGHT: PAN / WHEEL: ZOOM</span><span id="camera-readout">X -- / Y -- / Z --</span></div>
+        </section>
+        <aside class="inspector">
+          <div class="inspector-head">
+            <div><span class="panel-index">02</span><span class="panel-title">CASE INSPECTOR</span></div>
+            <span class="mode-chip">LEARN</span>
+          </div>
+          <section class="task-card">
+            <p class="eyebrow">CURRENT OBJECTIVE</p>
+            <h1 id="task-title">Loading training task</h1>
+            <p id="task-copy">The anomaly exercise starts when the public scene configuration is ready.</p>
+          </section>
+          <section class="state-card">
+            <div class="state-row"><span>CASE STATE</span><strong id="case-state">READY</strong></div>
+            <div class="state-row"><span>LEARNING STAGE</span><strong id="session-stage" class="pending">CONNECTING</strong></div>
+            <div class="state-row"><span>SESSION</span><strong id="session-code">NOT CREATED</strong></div>
+            <div class="state-row"><span>SCENE SOURCE</span><strong>PUBLIC CONFIG</strong></div>
+            <div class="state-row"><span>TUTOR</span><strong id="tutor-status" class="pending">CONNECTING</strong></div>
+          </section>
+          <section class="observation-card">
+            <div class="section-heading"><span>PUBLIC OBSERVATIONS</span><small>PUBLIC</small></div>
+            <ul id="observations" class="observation-list"><li>Awaiting animation playback</li></ul>
+          </section>
+          <section class="learning-panel" aria-labelledby="learning-title">
+            <div class="section-heading"><span id="learning-title">INVESTIGATION</span><small id="learning-progress">0 / 3 EVIDENCE</small></div>
+            <div id="learning-error" class="learning-notice error" role="alert" aria-live="assertive" hidden></div>
+            <div id="learning-notice" class="learning-notice" role="status" aria-live="polite">正在创建学习会话…</div>
+            <div class="learning-block">
+              <div class="learning-label"><span>AVAILABLE EVIDENCE</span><small>VALUES RELEASE ON REQUEST</small></div>
+              <div id="evidence-options" class="evidence-options" aria-live="polite"></div>
+            </div>
+            <form id="hypothesis-form" class="hypothesis-form">
+              <label for="hypothesis-input">CURRENT HYPOTHESIS</label>
+              <textarea id="hypothesis-input" maxlength="2000" rows="3" placeholder="先请求证据，再写下你的可检验假设…" disabled></textarea>
+              <div class="form-footer">
+                <small id="hypothesis-hint">等待 Evidence 解锁</small>
+                <button id="hypothesis-submit" type="submit" disabled>SUBMIT HYPOTHESIS</button>
+              </div>
+            </form>
+            <div class="learning-block history-block">
+              <div class="learning-label"><span>HYPOTHESIS HISTORY</span><small id="hypothesis-count">0 REVISION</small></div>
+              <ol id="hypothesis-history" class="hypothesis-history"><li class="empty">尚未提交假设</li></ol>
+            </div>
+          </section>
+          <section id="diagnosis-panel" class="diagnosis-panel" aria-labelledby="diagnosis-title">
+            <div class="section-heading"><span id="diagnosis-title">FINAL DIAGNOSIS</span><small id="diagnosis-status">LOCKED</small></div>
+            <div id="diagnosis-error" class="learning-notice error" role="alert" aria-live="assertive" hidden></div>
+            <div id="diagnosis-notice" class="learning-notice" role="status" aria-live="polite">完成一次假设修正后解锁诊断提交。</div>
+            <form id="diagnosis-form" class="diagnosis-form">
+              <label for="diagnosis-type">DIAGNOSIS TYPE</label>
+              <select id="diagnosis-type" disabled>
+                <option value="">请选择诊断类型</option>
+                <option value="object_pose_mismatch">物体位姿不匹配</option>
+                <option value="grasp_failure">抓取失败</option>
+                <option value="obstacle_collision_risk">障碍碰撞风险</option>
+                <option value="placement_target_conflict">放置目标冲突</option>
+              </select>
+              <label for="diagnosis-reasoning">DIAGNOSTIC REASONING</label>
+              <textarea id="diagnosis-reasoning" maxlength="4000" rows="4" placeholder="说明 Evidence 如何支持你的最终诊断…" disabled></textarea>
+              <fieldset id="diagnosis-evidence" disabled>
+                <legend>CITE RELEASED EVIDENCE</legend>
+                <div id="diagnosis-citations" class="diagnosis-citations"><p>尚无已释放 Evidence</p></div>
+              </fieldset>
+              <div class="form-footer">
+                <small id="diagnosis-hint">需要诊断类型、理由和至少一条 Evidence</small>
+                <button id="diagnosis-submit" type="submit" disabled>SUBMIT DIAGNOSIS</button>
+              </div>
+            </form>
+            <button id="report-retry" class="report-retry" type="button" hidden>RETRY REPORT</button>
+          </section>
+          <section id="report-panel" class="report-panel" aria-labelledby="report-title" hidden>
+            <div class="section-heading"><span id="report-title">TRAINING REPORT</span><small>AUTHORITATIVE</small></div>
+            <div id="report-content" class="report-content" aria-live="polite"></div>
+          </section>
+          <section class="tutor-panel" aria-labelledby="tutor-title">
+            <div class="section-heading"><span id="tutor-title">DIAGNOSTIC TUTOR</span><small>PUBLIC CONTEXT</small></div>
+            <div id="tutor-log" class="tutor-log" aria-live="polite">
+              <article class="tutor-message system"><span>SYSTEM</span><p>正在创建学习会话。Tutor 只读取已公开的案例与学习过程。</p></article>
+            </div>
+            <form id="tutor-form" class="tutor-form">
+              <label for="tutor-input">ASK FOR GUIDANCE</label>
+              <textarea id="tutor-input" maxlength="2000" rows="3" placeholder="描述你的观察或疑问…" disabled></textarea>
+              <button id="tutor-submit" type="submit" disabled>REQUEST HINT</button>
+            </form>
+          </section>
+        </aside>
+        <section class="timeline-panel" aria-label="Animation controls and timeline">
+          <div class="transport">
+            <button id="reset-button" class="transport-button secondary" type="button">RESET</button>
+            <button id="play-button" class="transport-button primary" type="button">PLAY</button>
+            <button id="skip-button" class="transport-button secondary" type="button">SKIP</button>
+          </div>
+          <div class="timeline-content">
+            <div class="timeline-status"><span id="step-index">00 / 00</span><strong id="step-label">Awaiting scene config</strong><span id="elapsed-label">00:00.0</span></div>
+            <div class="timeline-track" id="timeline-track"></div>
+          </div>
+          <div class="phase-indicator"><small>LEARNER PHASE</small><strong id="learner-phase">READY</strong></div>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
