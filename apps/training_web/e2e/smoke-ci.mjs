@@ -2,6 +2,12 @@ import assert from "node:assert/strict";
 import { chromium } from "playwright-core";
 import { verifyTutorDeliveryScenarios } from "./tutor-scenarios.mjs";
 import { verifyLearningFlow } from "./learning-flow.mjs";
+import {
+  verifyAssessmentScenarios,
+  verifyDiagnosisErrors,
+  verifyDiagnosisReportFlow,
+  verifyResponsiveDiagnosisFlows,
+} from "./diagnosis-report-flow.mjs";
 
 const browserChannel = process.env.SIMTROUBLE_BROWSER_CHANNEL ?? "msedge";
 const launchOptions = { headless: true };
@@ -62,9 +68,13 @@ try {
   assert.ok(resumed.endEffectorPosition[1] <= skipped.endEffectorPosition[1] + 0.02);
   assert.ok(resumeDisplacement < 0.25, `skip/play pose rolled back by ${resumeDisplacement}`);
   await verifyLearningFlow(page);
+  await verifyDiagnosisReportFlow(page);
   assert.deepEqual(errors, []);
   await page.close();
   await verifyTutorDeliveryScenarios(browser, baseUrl);
+  await verifyAssessmentScenarios(browser, baseUrl);
+  await verifyDiagnosisErrors(browser, baseUrl);
+  await verifyResponsiveDiagnosisFlows(browser, baseUrl);
 
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await mobile.goto(baseUrl, { waitUntil: "domcontentloaded" });
@@ -79,6 +89,10 @@ try {
   await mobile.close();
   console.log("E2E OK: play/pause/continue/visible failure/reset/skip continuity/view tools");
   console.log("E2E OK: Session, Evidence, Hypothesis flow and recoverable error");
+  console.log("E2E OK: Diagnosis submit, report retry, five dimensions, and create-once guard");
+  console.log("E2E OK: correct/partially_correct/incorrect/insufficient report rendering");
+  console.log("E2E OK: Diagnosis 409/422 error mapping preserves form and Session");
+  console.log("E2E OK: complete Diagnosis/Report flow at 1280x720, 768x1024, and 390x844");
   console.log("E2E OK: Tutor LLM success and timeout/malformed/leakage fallback delivery");
   console.log("E2E OK: 390px responsive viewport");
 } finally {

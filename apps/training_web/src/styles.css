@@ -160,7 +160,7 @@ body { background: radial-gradient(circle at 18% 0%, rgba(74, 105, 94, 0.12), tr
   color: var(--accent); border: 1px solid #315849; padding: 3px 7px;
   font: 8px Consolas, monospace; letter-spacing: 0.13em;
 }
-.task-card, .state-card, .observation-card, .learning-panel, .tutor-panel {
+.task-card, .state-card, .observation-card, .learning-panel, .diagnosis-panel, .report-panel, .tutor-panel {
   margin: 14px; border: 1px solid var(--line); background: var(--panel-raised);
 }
 .task-card { padding: 18px; border-left: 2px solid var(--accent); }
@@ -244,6 +244,84 @@ body { background: radial-gradient(circle at 18% 0%, rgba(74, 105, 94, 0.12), tr
 .hypothesis-history li.current { border-left-color: var(--accent); color: var(--text); }
 .hypothesis-history li.empty { counter-increment: none; padding-left: 8px; border-left-style: dashed; }
 .hypothesis-history li.empty::before { content: none; }
+
+.diagnosis-panel, .report-panel { overflow: hidden; }
+#diagnosis-status.ready { color: var(--accent); }
+.diagnosis-form { display: grid; gap: 8px; padding: 10px; border-top: 1px solid var(--line); }
+.diagnosis-form > label, .diagnosis-form legend {
+  color: var(--faint); font: 8px Consolas, monospace; letter-spacing: 0.12em;
+}
+.diagnosis-form select, .diagnosis-form textarea {
+  width: 100%; border: 1px solid var(--line-strong); background: #0d1110; color: var(--text);
+  font: 11px/1.5 "Segoe UI Variable", "Microsoft YaHei UI", sans-serif;
+}
+.diagnosis-form select { min-height: 34px; padding: 0 9px; }
+.diagnosis-form textarea { min-height: 82px; resize: vertical; padding: 9px; }
+.diagnosis-form select:focus, .diagnosis-form textarea:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
+.diagnosis-form select:disabled, .diagnosis-form textarea:disabled, .diagnosis-form fieldset:disabled {
+  cursor: not-allowed; opacity: 0.5;
+}
+.diagnosis-form fieldset { min-width: 0; margin: 2px 0; padding: 9px; border: 1px solid var(--line); }
+.diagnosis-form legend { padding: 0 5px; }
+.diagnosis-citations { display: grid; gap: 6px; }
+.diagnosis-citations > p { margin: 0; color: var(--faint); font-size: 10px; }
+.diagnosis-citation {
+  display: flex; align-items: center; gap: 8px; padding: 7px;
+  border: 1px solid var(--line); background: #101514; cursor: pointer;
+}
+.diagnosis-citation:has(input:checked) { border-color: #3f725e; background: #14201c; }
+.diagnosis-citation input { accent-color: var(--accent-strong); }
+.diagnosis-citation span { display: flex; flex: 1; justify-content: space-between; gap: 8px; }
+.diagnosis-citation strong { font: 10px Consolas, monospace; }
+.diagnosis-citation small { color: var(--faint); font: 8px Consolas, monospace; }
+.diagnosis-form button, .report-retry {
+  min-height: 32px; padding: 0 10px; border: 1px solid var(--accent);
+  background: transparent; color: var(--accent); cursor: pointer;
+  font: 8px Consolas, monospace; letter-spacing: 0.09em;
+}
+.diagnosis-form button:hover:not(:disabled), .report-retry:hover:not(:disabled) { background: var(--accent); color: #09100d; }
+.diagnosis-form button:disabled, .report-retry:disabled { cursor: not-allowed; opacity: 0.42; }
+.report-retry { width: calc(100% - 20px); margin: 0 10px 10px; }
+.report-retry[hidden], .report-panel[hidden] { display: none; }
+
+.report-content { padding: 10px; display: grid; gap: 10px; }
+.report-hero {
+  display: grid; grid-template-columns: minmax(0, 1fr) 112px; gap: 10px;
+  padding: 12px; border-left: 2px solid var(--accent); background: #0e1312;
+}
+.report-hero[data-assessment="incorrect"] { border-left-color: var(--warning); }
+.report-kicker, .report-assessment, .report-assessment-code { display: block; }
+.report-kicker { color: var(--faint); font: 8px Consolas, monospace; letter-spacing: 0.1em; }
+.report-assessment { margin-top: 5px; font-size: 18px; }
+.report-assessment-code { margin-top: 4px; color: var(--muted); font: 8px Consolas, monospace; }
+.report-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.report-metric { padding: 8px; border: 1px solid var(--line); background: #101514; }
+.report-metric span, .report-metric strong { display: block; overflow-wrap: anywhere; }
+.report-metric span { color: var(--faint); font: 7px Consolas, monospace; letter-spacing: 0.07em; }
+.report-metric strong { margin-top: 5px; color: var(--text); font: 11px Consolas, monospace; }
+.report-section { padding: 10px; border: 1px solid var(--line); background: #101514; }
+.report-section h3, .report-section h4 { margin: 0; color: var(--text); }
+.report-section h3 { padding-bottom: 8px; border-bottom: 1px solid var(--line); font-size: 11px; }
+.report-section h4 { margin-top: 10px; color: var(--accent); font-size: 10px; }
+.report-section > p { margin: 8px 0 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
+.report-definition-list {
+  display: grid; grid-template-columns: 68px minmax(0, 1fr); gap: 7px 9px;
+  margin: 9px 0 0; font-size: 10px; line-height: 1.55;
+}
+.report-definition-list dt { color: var(--faint); }
+.report-definition-list dd { margin: 0; color: var(--text); overflow-wrap: anywhere; }
+.report-evidence { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 9px; }
+.report-evidence span { color: var(--faint); font-size: 9px; }
+.report-evidence code { padding: 3px 6px; border: 1px solid #315849; color: var(--accent); font-size: 9px; }
+.dimension-grid { display: grid; gap: 7px; margin-top: 8px; }
+.dimension-card { padding: 8px; border-left: 2px solid var(--accent); background: #0d1110; }
+.dimension-card[data-status="not_assessed"] { border-left-color: var(--line-strong); }
+.dimension-heading { display: flex; align-items: start; justify-content: space-between; gap: 8px; }
+.dimension-heading strong { font-size: 10px; }
+.dimension-score { color: var(--accent); font: 8px Consolas, monospace; text-align: right; }
+.dimension-card[data-status="not_assessed"] .dimension-score { color: var(--muted); }
+.dimension-card p { margin: 6px 0 0; color: var(--muted); font-size: 9px; line-height: 1.55; }
+.dimension-weight { display: block; margin-top: 5px; color: var(--faint); font: 8px Consolas, monospace; }
 
 .tutor-panel { overflow: hidden; }
 .tutor-log { max-height: 260px; overflow-y: auto; padding: 10px; display: grid; gap: 8px; }

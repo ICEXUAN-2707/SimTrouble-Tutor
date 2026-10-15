@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { chromium } from "playwright-core";
 import { verifyTutorDeliveryScenarios } from "./tutor-scenarios.mjs";
 import { verifyLearningFlow } from "./learning-flow.mjs";
+import { verifyDiagnosisReportFlow } from "./diagnosis-report-flow.mjs";
 
 const browser = await chromium.launch({
   channel: "msedge",
@@ -28,6 +29,7 @@ try {
   assert.equal(await page.locator("#case-state").textContent(), "READY");
   assert.equal(await page.locator("#fault-callout").isHidden(), true);
   await verifyLearningFlow(page);
+  await verifyDiagnosisReportFlow(page);
   assert.deepEqual(errors, []);
   await verifyTutorDeliveryScenarios(browser, baseUrl);
 
@@ -44,6 +46,7 @@ try {
   await mobile.close();
   console.log("E2E OK: READY -> FAILURE_OBSERVED -> RESET");
   console.log("E2E OK: Session, Evidence, Hypothesis flow and recoverable error");
+  console.log("E2E OK: Diagnosis submit, report retry, five dimensions, and create-once guard");
   console.log("E2E OK: Tutor LLM success and timeout/malformed/leakage fallback delivery");
   console.log("E2E OK: 390px responsive viewport");
 } finally {

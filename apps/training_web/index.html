@@ -85,6 +85,36 @@
               <ol id="hypothesis-history" class="hypothesis-history"><li class="empty">尚未提交假设</li></ol>
             </div>
           </section>
+          <section id="diagnosis-panel" class="diagnosis-panel" aria-labelledby="diagnosis-title">
+            <div class="section-heading"><span id="diagnosis-title">FINAL DIAGNOSIS</span><small id="diagnosis-status">LOCKED</small></div>
+            <div id="diagnosis-error" class="learning-notice error" role="alert" aria-live="assertive" hidden></div>
+            <div id="diagnosis-notice" class="learning-notice" role="status" aria-live="polite">完成一次假设修正后解锁诊断提交。</div>
+            <form id="diagnosis-form" class="diagnosis-form">
+              <label for="diagnosis-type">DIAGNOSIS TYPE</label>
+              <select id="diagnosis-type" disabled>
+                <option value="">请选择诊断类型</option>
+                <option value="object_pose_mismatch">物体位姿不匹配</option>
+                <option value="grasp_failure">抓取失败</option>
+                <option value="obstacle_collision_risk">障碍碰撞风险</option>
+                <option value="placement_target_conflict">放置目标冲突</option>
+              </select>
+              <label for="diagnosis-reasoning">DIAGNOSTIC REASONING</label>
+              <textarea id="diagnosis-reasoning" maxlength="4000" rows="4" placeholder="说明 Evidence 如何支持你的最终诊断…" disabled></textarea>
+              <fieldset id="diagnosis-evidence" disabled>
+                <legend>CITE RELEASED EVIDENCE</legend>
+                <div id="diagnosis-citations" class="diagnosis-citations"><p>尚无已释放 Evidence</p></div>
+              </fieldset>
+              <div class="form-footer">
+                <small id="diagnosis-hint">需要诊断类型、理由和至少一条 Evidence</small>
+                <button id="diagnosis-submit" type="submit" disabled>SUBMIT DIAGNOSIS</button>
+              </div>
+            </form>
+            <button id="report-retry" class="report-retry" type="button" hidden>RETRY REPORT</button>
+          </section>
+          <section id="report-panel" class="report-panel" aria-labelledby="report-title" hidden>
+            <div class="section-heading"><span id="report-title">TRAINING REPORT</span><small>AUTHORITATIVE</small></div>
+            <div id="report-content" class="report-content" aria-live="polite"></div>
+          </section>
           <section class="tutor-panel" aria-labelledby="tutor-title">
             <div class="section-heading"><span id="tutor-title">DIAGNOSTIC TUTOR</span><small>PUBLIC CONTEXT</small></div>
             <div id="tutor-log" class="tutor-log" aria-live="polite">

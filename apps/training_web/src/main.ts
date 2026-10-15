@@ -1,5 +1,15 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { renderTrainingReport } from "./report-renderer";
+import type {
+  DiagnosisSubmission,
+  DiagnosisType,
+  ReleasedEvidence,
+  SessionView,
+  TrainingReport,
+  TutorAction,
+  TutorTurnResponse,
+} from "./learning-types";
 import "./styles.css";
 
 type Vec3 = [number, number, number];
@@ -33,45 +43,6 @@ interface SimulationSnapshot {
   workpiecePosition: Vec3;
   endEffectorDistance: number;
   objectAttached: boolean;
-}
-
-type TutorAction =
-  | "observe_scene"
-  | "inspect_evidence"
-  | "submit_hypothesis"
-  | "revise_hypothesis"
-  | "submit_diagnosis"
-  | "reflect";
-
-interface EvidenceOption {
-  id: string;
-  type: string;
-}
-
-interface ReleasedEvidence extends EvidenceOption {
-  content: Record<string, unknown>;
-}
-
-interface SessionView {
-  contract_version: string;
-  session_id: string;
-  case_public_state: {
-    evidence_options: EvidenceOption[];
-  };
-  public_stage: string;
-  released_evidence: ReleasedEvidence[];
-  current_hypothesis: string | null;
-  hypotheses: string[];
-  allowed_actions: TutorAction[];
-}
-
-interface TutorTurnResponse {
-  tutor: {
-    message: string;
-    suggested_action: string | null;
-  };
-  session: SessionView;
-  tutor_mode: "llm" | "rule_fallback";
 }
 
 declare global {
@@ -110,6 +81,19 @@ const hypothesisSubmit = byId<HTMLButtonElement>("hypothesis-submit");
 const hypothesisHint = byId<HTMLElement>("hypothesis-hint");
 const hypothesisHistory = byId<HTMLOListElement>("hypothesis-history");
 const hypothesisCount = byId<HTMLElement>("hypothesis-count");
+const diagnosisStatus = byId<HTMLElement>("diagnosis-status");
+const diagnosisError = byId<HTMLDivElement>("diagnosis-error");
+const diagnosisNotice = byId<HTMLDivElement>("diagnosis-notice");
+const diagnosisForm = byId<HTMLFormElement>("diagnosis-form");
+const diagnosisType = byId<HTMLSelectElement>("diagnosis-type");
+const diagnosisReasoning = byId<HTMLTextAreaElement>("diagnosis-reasoning");
+const diagnosisEvidence = byId<HTMLFieldSetElement>("diagnosis-evidence");
+const diagnosisCitations = byId<HTMLDivElement>("diagnosis-citations");
+const diagnosisHint = byId<HTMLElement>("diagnosis-hint");
+const diagnosisSubmit = byId<HTMLButtonElement>("diagnosis-submit");
+const reportRetry = byId<HTMLButtonElement>("report-retry");
+const reportPanel = byId<HTMLElement>("report-panel");
+const reportContent = byId<HTMLDivElement>("report-content");
 
 let config: SceneConfig;
 let scene: THREE.Scene;
@@ -136,6 +120,8 @@ let sessionId: string | null = null;
 let sessionView: SessionView | null = null;
 let tutorBusy = false;
 let learningBusy = false;
+let diagnosisBusy = false;
+let reportLoaded: TrainingReport | null = null;
 
 const deg = THREE.MathUtils.degToRad;
 const steel = new THREE.MeshStandardMaterial({ color: 0x76817d, roughness: 0.54, metalness: 0.68 });
@@ -453,11 +439,174 @@ function showLearningError(error: unknown): void {
   learningError.hidden = false;
 }
 
+const diagnosisTypes = new Set<string>([
+  "object_pose_mismatch",
+  "grasp_failure",
+  "obstacle_collision_risk",
+  "placement_target_conflict",
+]);
+
+function isDiagnosisType(value: string): value is DiagnosisType {
+  return diagnosisTypes.has(value);
+}
+
+function diagnosisErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) return "诊断操作失败，请检查服务连接后重试。当前学习进度已保留。";
+  const messages: Record<string, string> = {
+    diagnosis_already_submitted: "本会话已提交过诊断，不能重复提交。",
+    invalid_session_stage: "当前学习阶段不允许提交诊断，请先完成证据调查和假设修正。",
+    invalid_evidence_reference: "诊断引用包含未释放的 Evidence，请重新选择。",
+    report_not_ready: "训练报告尚未就绪，请稍后重试读取报告。",
+    session_not_found: "学习会话已失效，请刷新页面创建新会话。",
+  };
+  return messages[error.detail] ?? `诊断操作失败（HTTP ${error.status}），当前学习进度已保留。`;
+}
+
+function setDiagnosisNotice(message: string): void {
+  diagnosisNotice.textContent = message;
+  diagnosisNotice.hidden = false;
+}
+
+function clearDiagnosisError(): void {
+  diagnosisError.textContent = "";
+  diagnosisError.hidden = true;
+}
+
+function showDiagnosisError(error: unknown): void {
+  diagnosisError.textContent = diagnosisErrorMessage(error);
+  diagnosisError.hidden = false;
+}
+
+function selectedEvidenceIds(): string[] {
+  const releasedIds = new Set(sessionView?.released_evidence.map((evidence) => evidence.id) ?? []);
+  return Array.from(
+    diagnosisCitations.querySelectorAll<HTMLInputElement>("input[type='checkbox']:checked"),
+    (input) => input.value,
+  ).filter((evidenceId) => releasedIds.has(evidenceId));
+}
+
+function renderDiagnosisCitations(): void {
+  const selected = new Set(selectedEvidenceIds());
+  const released = sessionView?.released_evidence ?? [];
+  if (released.length === 0) {
+    const empty = document.createElement("p");
+    empty.textContent = "尚无已释放 Evidence";
+    diagnosisCitations.replaceChildren(empty);
+    return;
+  }
+  diagnosisCitations.replaceChildren(...released.map((evidence) => {
+    const label = document.createElement("label");
+    label.className = "diagnosis-citation";
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.value = evidence.id;
+    checkbox.checked = selected.has(evidence.id);
+    const copy = document.createElement("span");
+    const id = document.createElement("strong");
+    const type = document.createElement("small");
+    id.textContent = evidence.id;
+    type.textContent = evidence.type.replaceAll("_", " ").toUpperCase();
+    copy.append(id, type);
+    label.append(checkbox, copy);
+    return label;
+  }));
+}
+
+function updateDiagnosisControls(): void {
+  const canSubmit = hasAction("submit_diagnosis");
+  const submitted = sessionView?.public_stage === "SUBMITTED"
+    || sessionView?.public_stage === "REVIEWED"
+    || reportLoaded !== null;
+  const interactionBusy = learningBusy || tutorBusy || diagnosisBusy;
+  const unlocked = canSubmit && !submitted && !interactionBusy;
+  diagnosisType.disabled = !unlocked;
+  diagnosisReasoning.disabled = !unlocked;
+  diagnosisEvidence.disabled = !unlocked;
+  diagnosisCitations.querySelectorAll<HTMLInputElement>("input[type='checkbox']")
+    .forEach((input) => { input.disabled = !unlocked; });
+
+  const complete = isDiagnosisType(diagnosisType.value)
+    && diagnosisReasoning.value.trim().length > 0
+    && selectedEvidenceIds().length > 0;
+  diagnosisSubmit.disabled = !unlocked || !complete;
+  diagnosisSubmit.textContent = diagnosisBusy ? "SUBMITTING…" : "SUBMIT DIAGNOSIS";
+  reportRetry.disabled = diagnosisBusy;
+
+  diagnosisStatus.textContent = reportLoaded !== null
+    ? "REVIEWED"
+    : submitted
+      ? "SUBMITTED"
+      : canSubmit
+        ? "READY"
+        : "LOCKED";
+  diagnosisStatus.classList.toggle("ready", canSubmit && !submitted);
+
+  diagnosisHint.textContent = reportLoaded !== null
+    ? "报告已生成，诊断不可再次提交"
+    : submitted
+      ? "诊断已提交，等待报告"
+      : canSubmit
+        ? complete
+          ? "提交后不可修改"
+          : "需要诊断类型、理由和至少一条 Evidence"
+        : "完成一次假设修正后解锁";
+}
+
+function setDiagnosisBusy(busy: boolean): void {
+  diagnosisBusy = busy;
+  renderEvidence();
+  updateHypothesisControls();
+  setTutorBusy(tutorBusy);
+  updateDiagnosisControls();
+}
+
+async function fetchTrainingReport(): Promise<boolean> {
+  if (sessionId === null) return false;
+  reportRetry.hidden = true;
+  setDiagnosisNotice("正在读取确定性训练报告…");
+  try {
+    const report = await requestJson<TrainingReport>(
+      `/api/v0.4/sessions/${encodeURIComponent(sessionId)}/report`,
+      { method: "GET" },
+    );
+    if (report.session_id !== sessionId) {
+      throw new Error("Report session mismatch");
+    }
+    reportLoaded = report;
+    renderTrainingReport(reportContent, report);
+    reportPanel.hidden = false;
+    clearDiagnosisError();
+    setDiagnosisNotice("诊断已完成。以下内容由后端评估与评分管线生成。");
+    updateDiagnosisControls();
+
+    try {
+      const reviewed = await requestJson<SessionView>(
+        `/api/v0.4/sessions/${encodeURIComponent(sessionId)}`,
+        { method: "GET" },
+      );
+      renderSession(reviewed);
+    } catch {
+      setDiagnosisNotice("报告已生成；公开 Session 阶段刷新失败，不影响报告结果。");
+    }
+    reportPanel.scrollIntoView({ block: "start" });
+    return true;
+  } catch (error) {
+    showDiagnosisError(error);
+    if (error instanceof ApiError && error.detail === "report_not_ready") {
+      reportRetry.hidden = false;
+      setDiagnosisNotice("报告尚未就绪。当前 Session 已保留，可手动重试读取。");
+    } else {
+      setDiagnosisNotice("报告读取失败。诊断提交状态和当前 Session 已保留。");
+    }
+    return false;
+  }
+}
+
 function updateHypothesisControls(): void {
   const canSubmit = hasAction("submit_hypothesis");
   const canRevise = hasAction("revise_hypothesis");
   const actionAvailable = canSubmit || canRevise;
-  hypothesisInput.disabled = !actionAvailable || learningBusy || tutorBusy;
+  hypothesisInput.disabled = !actionAvailable || learningBusy || tutorBusy || diagnosisBusy;
   hypothesisSubmit.disabled = hypothesisInput.disabled || hypothesisInput.value.trim().length === 0;
   hypothesisSubmit.textContent = canRevise ? "REVISE HYPOTHESIS" : "SUBMIT HYPOTHESIS";
   hypothesisHint.textContent = canRevise
@@ -473,7 +622,7 @@ function renderEvidence(): void {
     return;
   }
   const released = new Map(sessionView.released_evidence.map((item) => [item.id, item]));
-  const canInspect = hasAction("inspect_evidence") && !learningBusy && !tutorBusy;
+  const canInspect = hasAction("inspect_evidence") && !learningBusy && !tutorBusy && !diagnosisBusy;
   evidenceOptions.replaceChildren(...sessionView.case_public_state.evidence_options.map((option) => {
     const card = document.createElement("article");
     card.className = "evidence-card";
@@ -541,6 +690,8 @@ function renderSession(view: SessionView): void {
   }
   renderEvidence();
   updateHypothesisControls();
+  renderDiagnosisCitations();
+  updateDiagnosisControls();
 }
 
 function setLearningBusy(busy: boolean): void {
@@ -579,12 +730,13 @@ function appendTutorMessage(
 
 function setTutorBusy(busy: boolean): void {
   tutorBusy = busy;
-  tutorInput.disabled = busy || learningBusy || sessionId === null;
-  tutorSubmit.disabled = busy || learningBusy || sessionId === null;
+  tutorInput.disabled = busy || learningBusy || diagnosisBusy || sessionId === null;
+  tutorSubmit.disabled = busy || learningBusy || diagnosisBusy || sessionId === null;
   tutorSubmit.textContent = busy ? "PROCESSING…" : "REQUEST HINT";
   if (sessionView) {
     renderEvidence();
     updateHypothesisControls();
+    updateDiagnosisControls();
   }
 }
 
@@ -616,7 +768,7 @@ function bindLearning(): void {
     const target = event.target;
     if (!(target instanceof HTMLButtonElement)) return;
     const evidenceId = target.dataset.evidenceId;
-    if (!evidenceId || !sessionId || !hasAction("inspect_evidence") || learningBusy) return;
+    if (!evidenceId || !sessionId || !hasAction("inspect_evidence") || learningBusy || tutorBusy || diagnosisBusy) return;
     clearLearningError();
     setLearningBusy(true);
     setLearningNotice(`正在请求 ${evidenceId}…`);
@@ -640,7 +792,7 @@ function bindLearning(): void {
     event.preventDefault();
     const hypothesis = hypothesisInput.value.trim();
     const actionAvailable = hasAction("submit_hypothesis") || hasAction("revise_hypothesis");
-    if (!hypothesis || !sessionId || !actionAvailable || learningBusy) return;
+    if (!hypothesis || !sessionId || !actionAvailable || learningBusy || tutorBusy || diagnosisBusy) return;
     clearLearningError();
     setLearningBusy(true);
     setLearningNotice("正在提交假设…");
@@ -660,11 +812,68 @@ function bindLearning(): void {
   });
 }
 
+function bindDiagnosis(): void {
+  diagnosisType.addEventListener("change", updateDiagnosisControls);
+  diagnosisReasoning.addEventListener("input", updateDiagnosisControls);
+  diagnosisCitations.addEventListener("change", updateDiagnosisControls);
+
+  diagnosisForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const diagnosisValue = diagnosisType.value;
+    const reasoning = diagnosisReasoning.value.trim();
+    const citedEvidenceIds = selectedEvidenceIds();
+    if (
+      sessionId === null
+      || !isDiagnosisType(diagnosisValue)
+      || !reasoning
+      || citedEvidenceIds.length === 0
+      || !hasAction("submit_diagnosis")
+      || diagnosisBusy
+      || learningBusy
+      || tutorBusy
+    ) return;
+
+    const submission: DiagnosisSubmission = {
+      contract_version: "0.4.0",
+      diagnosis_type: diagnosisValue,
+      reasoning,
+      cited_evidence_ids: citedEvidenceIds,
+    };
+    clearDiagnosisError();
+    setDiagnosisNotice("正在提交一次性诊断…");
+    setDiagnosisBusy(true);
+    try {
+      const submitted = await requestJson<SessionView>(
+        `/api/v0.4/sessions/${encodeURIComponent(sessionId)}/diagnosis`,
+        { method: "POST", body: JSON.stringify(submission) },
+      );
+      renderSession(submitted);
+      setDiagnosisNotice("诊断已提交，正在读取训练报告…");
+    } catch (error) {
+      showDiagnosisError(error);
+      setDiagnosisNotice("诊断未提交；表单内容、Evidence 和学习进度均已保留。");
+      setDiagnosisBusy(false);
+      return;
+    }
+
+    await fetchTrainingReport();
+    setDiagnosisBusy(false);
+  });
+
+  reportRetry.addEventListener("click", async () => {
+    if (sessionId === null || diagnosisBusy) return;
+    clearDiagnosisError();
+    setDiagnosisBusy(true);
+    await fetchTrainingReport();
+    setDiagnosisBusy(false);
+  });
+}
+
 function bindTutor(): void {
   tutorForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const message = tutorInput.value.trim();
-    if (!message || sessionId === null || tutorBusy) return;
+    if (!message || sessionId === null || tutorBusy || learningBusy || diagnosisBusy) return;
     appendTutorMessage("learner", message);
     tutorInput.value = "";
     setTutorBusy(true);
@@ -759,6 +968,7 @@ async function initialise(): Promise<void> {
     });
     bindControls();
     bindLearning();
+    bindDiagnosis();
     bindTutor();
     updateInterface();
     loadingState.hidden = true;
