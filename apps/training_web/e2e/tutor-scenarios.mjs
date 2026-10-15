@@ -13,6 +13,8 @@ export async function verifyTutorDeliveryScenarios(browser, baseUrl) {
     const body = route.request().postDataJSON();
     const scenario = scenarios.get(body.message);
     assert.ok(scenario, `unexpected Tutor scenario: ${body.message}`);
+    const sessionId = route.request().url().match(/\/sessions\/([^/]+)\/tutor/)?.[1];
+    assert.ok(sessionId);
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -24,14 +26,29 @@ export async function verifyTutorDeliveryScenarios(browser, baseUrl) {
           hint_level: 0,
           suggested_action: "inspect_evidence",
         },
-        session: {},
+        session: {
+          contract_version: "0.4.0",
+          session_id: sessionId,
+          case_public_state: {
+            evidence_options: [
+              { id: "E01", type: "gripper_state" },
+              { id: "E02", type: "object_pose" },
+              { id: "E03", type: "target_pose" },
+            ],
+          },
+          public_stage: "READY",
+          released_evidence: [],
+          current_hypothesis: null,
+          hypotheses: [],
+          allowed_actions: ["observe_scene", "inspect_evidence"],
+        },
         tutor_mode: scenario.mode,
       }),
     });
   });
 
   try {
-    await page.goto(baseUrl, { waitUntil: "networkidle" });
+    await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
     await page.locator("#tutor-status").filter({ hasText: "READY" }).waitFor();
     for (const [prompt, scenario] of scenarios) {
       await page.locator("#tutor-input").fill(prompt);

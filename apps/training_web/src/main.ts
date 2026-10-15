@@ -35,9 +35,34 @@ interface SimulationSnapshot {
   objectAttached: boolean;
 }
 
+type TutorAction =
+  | "observe_scene"
+  | "inspect_evidence"
+  | "submit_hypothesis"
+  | "revise_hypothesis"
+  | "submit_diagnosis"
+  | "reflect";
+
+interface EvidenceOption {
+  id: string;
+  type: string;
+}
+
+interface ReleasedEvidence extends EvidenceOption {
+  content: Record<string, unknown>;
+}
+
 interface SessionView {
+  contract_version: string;
   session_id: string;
+  case_public_state: {
+    evidence_options: EvidenceOption[];
+  };
   public_stage: string;
+  released_evidence: ReleasedEvidence[];
+  current_hypothesis: string | null;
+  hypotheses: string[];
+  allowed_actions: TutorAction[];
 }
 
 interface TutorTurnResponse {
@@ -73,6 +98,18 @@ const tutorLog = byId<HTMLDivElement>("tutor-log");
 const tutorForm = byId<HTMLFormElement>("tutor-form");
 const tutorInput = byId<HTMLTextAreaElement>("tutor-input");
 const tutorSubmit = byId<HTMLButtonElement>("tutor-submit");
+const sessionStage = byId<HTMLElement>("session-stage");
+const sessionCode = byId<HTMLElement>("session-code");
+const learningProgress = byId<HTMLElement>("learning-progress");
+const learningError = byId<HTMLDivElement>("learning-error");
+const learningNotice = byId<HTMLDivElement>("learning-notice");
+const evidenceOptions = byId<HTMLDivElement>("evidence-options");
+const hypothesisForm = byId<HTMLFormElement>("hypothesis-form");
+const hypothesisInput = byId<HTMLTextAreaElement>("hypothesis-input");
+const hypothesisSubmit = byId<HTMLButtonElement>("hypothesis-submit");
+const hypothesisHint = byId<HTMLElement>("hypothesis-hint");
+const hypothesisHistory = byId<HTMLOListElement>("hypothesis-history");
+const hypothesisCount = byId<HTMLElement>("hypothesis-count");
 
 let config: SceneConfig;
 let scene: THREE.Scene;
@@ -96,7 +133,9 @@ let previousFrame = performance.now();
 let frameCounter = 0;
 let fpsWindowStart = performance.now();
 let sessionId: string | null = null;
+let sessionView: SessionView | null = null;
 let tutorBusy = false;
+let learningBusy = false;
 
 const deg = THREE.MathUtils.degToRad;
 const steel = new THREE.MeshStandardMaterial({ color: 0x76817d, roughness: 0.54, metalness: 0.68 });
@@ -350,13 +389,164 @@ function bindControls(): void {
   }));
 }
 
+class ApiError extends Error {
+  constructor(
+    readonly status: number,
+    readonly detail: string,
+  ) {
+    super(detail);
+  }
+}
+
 async function requestJson<T>(url: string, init: RequestInit): Promise<T> {
   const response = await fetch(url, {
     ...init,
     headers: { Accept: "application/json", "Content-Type": "application/json" },
   });
-  if (!response.ok) throw new Error(`API returned ${response.status}`);
+  if (!response.ok) {
+    let detail = "request_failed";
+    try {
+      const payload = await response.json() as { detail?: unknown };
+      if (typeof payload.detail === "string") detail = payload.detail;
+    } catch {
+      // Keep the stable fallback when an upstream response is not JSON.
+    }
+    throw new ApiError(response.status, detail);
+  }
   return await response.json() as T;
+}
+
+function learningErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) return "操作失败，请检查服务连接后重试。当前学习进度已保留。";
+  const messages: Record<string, string> = {
+    invalid_session_stage: "当前学习阶段不允许此操作，请按可用步骤继续。",
+    evidence_not_found: "该证据不存在或已不可用，请选择列表中的证据。",
+    session_not_found: "学习会话已失效，请刷新页面创建新会话。",
+  };
+  return messages[error.detail] ?? `操作失败（HTTP ${error.status}），当前学习进度已保留。`;
+}
+
+function hasAction(action: TutorAction): boolean {
+  return sessionView?.allowed_actions.includes(action) ?? false;
+}
+
+function formatEvidenceValue(value: unknown): string {
+  if (typeof value === "boolean") return value ? "YES" : "NO";
+  if (value === null) return "NULL";
+  if (Array.isArray(value)) return value.map(formatEvidenceValue).join(", ");
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
+function setLearningNotice(message: string): void {
+  learningNotice.textContent = message;
+  learningNotice.hidden = false;
+}
+
+function clearLearningError(): void {
+  learningError.hidden = true;
+  learningError.textContent = "";
+}
+
+function showLearningError(error: unknown): void {
+  learningError.textContent = learningErrorMessage(error);
+  learningError.hidden = false;
+}
+
+function updateHypothesisControls(): void {
+  const canSubmit = hasAction("submit_hypothesis");
+  const canRevise = hasAction("revise_hypothesis");
+  const actionAvailable = canSubmit || canRevise;
+  hypothesisInput.disabled = !actionAvailable || learningBusy || tutorBusy;
+  hypothesisSubmit.disabled = hypothesisInput.disabled || hypothesisInput.value.trim().length === 0;
+  hypothesisSubmit.textContent = canRevise ? "REVISE HYPOTHESIS" : "SUBMIT HYPOTHESIS";
+  hypothesisHint.textContent = canRevise
+    ? "可依据新证据修正"
+    : canSubmit
+      ? "提交初始假设"
+      : "等待 Evidence 解锁";
+}
+
+function renderEvidence(): void {
+  if (sessionView === null) {
+    evidenceOptions.replaceChildren();
+    return;
+  }
+  const released = new Map(sessionView.released_evidence.map((item) => [item.id, item]));
+  const canInspect = hasAction("inspect_evidence") && !learningBusy && !tutorBusy;
+  evidenceOptions.replaceChildren(...sessionView.case_public_state.evidence_options.map((option) => {
+    const card = document.createElement("article");
+    card.className = "evidence-card";
+    const evidence = released.get(option.id);
+    if (evidence) card.classList.add("released");
+
+    const heading = document.createElement("div");
+    heading.className = "evidence-heading";
+    const title = document.createElement("strong");
+    title.textContent = option.id;
+    const type = document.createElement("span");
+    type.textContent = option.type.replaceAll("_", " ").toUpperCase();
+    heading.append(title, type);
+    card.append(heading);
+
+    if (evidence) {
+      const values = document.createElement("dl");
+      values.className = "evidence-values";
+      for (const [key, value] of Object.entries(evidence.content)) {
+        const term = document.createElement("dt");
+        const detail = document.createElement("dd");
+        term.textContent = key.replaceAll("_", " ").toUpperCase();
+        detail.textContent = formatEvidenceValue(value);
+        values.append(term, detail);
+      }
+      card.append(values);
+    } else {
+      const locked = document.createElement("p");
+      locked.className = "evidence-locked";
+      locked.textContent = "测量值未释放";
+      card.append(locked);
+    }
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.evidenceId = option.id;
+    button.disabled = evidence !== undefined || !canInspect;
+    button.textContent = evidence ? "RELEASED" : learningBusy ? "REQUESTING…" : "REQUEST";
+    card.append(button);
+    return card;
+  }));
+}
+
+function renderSession(view: SessionView): void {
+  sessionView = view;
+  sessionId = view.session_id;
+  sessionStage.textContent = view.public_stage;
+  sessionStage.classList.remove("pending");
+  sessionCode.textContent = view.session_id.slice(0, 8).toUpperCase();
+  sessionCode.title = view.session_id;
+  learningProgress.textContent = `${view.released_evidence.length} / ${view.case_public_state.evidence_options.length} EVIDENCE`;
+  hypothesisCount.textContent = `${view.hypotheses.length} ${view.hypotheses.length === 1 ? "ENTRY" : "ENTRIES"}`;
+  hypothesisHistory.replaceChildren(...(
+    view.hypotheses.length > 0
+      ? view.hypotheses.map((hypothesis, index) => {
+        const item = document.createElement("li");
+        item.textContent = hypothesis;
+        if (index === view.hypotheses.length - 1) item.classList.add("current");
+        return item;
+      })
+      : [Object.assign(document.createElement("li"), { className: "empty", textContent: "尚未提交假设" })]
+  ));
+  if (document.activeElement !== hypothesisInput) {
+    hypothesisInput.value = view.current_hypothesis ?? "";
+  }
+  renderEvidence();
+  updateHypothesisControls();
+}
+
+function setLearningBusy(busy: boolean): void {
+  learningBusy = busy;
+  if (sessionView) renderSession(sessionView);
+  setTutorBusy(tutorBusy);
 }
 
 function appendTutorMessage(
@@ -389,27 +579,85 @@ function appendTutorMessage(
 
 function setTutorBusy(busy: boolean): void {
   tutorBusy = busy;
-  tutorInput.disabled = busy || sessionId === null;
-  tutorSubmit.disabled = busy || sessionId === null;
+  tutorInput.disabled = busy || learningBusy || sessionId === null;
+  tutorSubmit.disabled = busy || learningBusy || sessionId === null;
   tutorSubmit.textContent = busy ? "PROCESSING…" : "REQUEST HINT";
+  if (sessionView) {
+    renderEvidence();
+    updateHypothesisControls();
+  }
 }
 
-async function initialiseTutorSession(): Promise<void> {
+async function initialiseLearningSession(): Promise<void> {
   try {
     const session = await requestJson<SessionView>("/api/v0.4/sessions", {
       method: "POST",
       body: JSON.stringify({ case_id: config.case_id }),
     });
-    sessionId = session.session_id;
+    renderSession(session);
     tutorStatus.textContent = "READY";
     tutorStatus.classList.remove("pending");
     tutorLog.replaceChildren();
     appendTutorMessage("system", "会话已建立。请先描述观察，再请求诊断提示。");
+    setLearningNotice("会话已建立。请请求一条 Evidence 开始调查。");
+    clearLearningError();
     setTutorBusy(false);
   } catch (error) {
+    sessionStage.textContent = "OFFLINE";
     tutorStatus.textContent = "OFFLINE";
+    showLearningError(error);
+    setLearningNotice("未创建新会话。修复连接后刷新页面重试。");
     appendTutorMessage("system", error instanceof Error ? error.message : "Tutor session unavailable");
   }
+}
+
+function bindLearning(): void {
+  evidenceOptions.addEventListener("click", async (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLButtonElement)) return;
+    const evidenceId = target.dataset.evidenceId;
+    if (!evidenceId || !sessionId || !hasAction("inspect_evidence") || learningBusy) return;
+    clearLearningError();
+    setLearningBusy(true);
+    setLearningNotice(`正在请求 ${evidenceId}…`);
+    try {
+      const response = await requestJson<{ evidence: ReleasedEvidence; session: SessionView }>(
+        `/api/v0.4/sessions/${encodeURIComponent(sessionId)}/evidence`,
+        { method: "POST", body: JSON.stringify({ evidence_id: evidenceId }) },
+      );
+      renderSession(response.session);
+      setLearningNotice(`${response.evidence.id} 已释放。测量值现已加入本会话。`);
+    } catch (error) {
+      showLearningError(error);
+      setLearningNotice("请求未完成；已释放证据和假设均保持不变。");
+    } finally {
+      setLearningBusy(false);
+    }
+  });
+
+  hypothesisInput.addEventListener("input", updateHypothesisControls);
+  hypothesisForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const hypothesis = hypothesisInput.value.trim();
+    const actionAvailable = hasAction("submit_hypothesis") || hasAction("revise_hypothesis");
+    if (!hypothesis || !sessionId || !actionAvailable || learningBusy) return;
+    clearLearningError();
+    setLearningBusy(true);
+    setLearningNotice("正在提交假设…");
+    try {
+      const response = await requestJson<SessionView>(
+        `/api/v0.4/sessions/${encodeURIComponent(sessionId)}/hypotheses`,
+        { method: "POST", body: JSON.stringify({ hypothesis }) },
+      );
+      renderSession(response);
+      setLearningNotice(response.hypotheses.length > 1 ? "假设已修正，诊断提交现已解锁。" : "初始假设已记录。请继续请求证据并修正假设。");
+    } catch (error) {
+      showLearningError(error);
+      setLearningNotice("提交未完成；输入内容和现有学习进度均已保留。");
+    } finally {
+      setLearningBusy(false);
+    }
+  });
 }
 
 function bindTutor(): void {
@@ -432,6 +680,7 @@ function bindTutor(): void {
         response.tutor_mode,
         response.tutor.suggested_action,
       );
+      renderSession(response.session);
       tutorStatus.textContent = response.tutor_mode === "llm" ? "LLM" : "SAFE FALLBACK";
     } catch (error) {
       appendTutorMessage("system", "Tutor 请求失败，请稍后重试。学习会话仍然保留。");
@@ -509,12 +758,13 @@ async function initialise(): Promise<void> {
       value: inspectSimulation,
     });
     bindControls();
+    bindLearning();
     bindTutor();
     updateInterface();
     loadingState.hidden = true;
     new ResizeObserver(resizeViewport).observe(viewport);
     requestAnimationFrame(animate);
-    await initialiseTutorSession();
+    await initialiseLearningSession();
   } catch (error) {
     loadingState.replaceChildren();
     const heading = document.createElement("strong");

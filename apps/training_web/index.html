@@ -55,12 +55,35 @@
           </section>
           <section class="state-card">
             <div class="state-row"><span>CASE STATE</span><strong id="case-state">READY</strong></div>
+            <div class="state-row"><span>LEARNING STAGE</span><strong id="session-stage" class="pending">CONNECTING</strong></div>
+            <div class="state-row"><span>SESSION</span><strong id="session-code">NOT CREATED</strong></div>
             <div class="state-row"><span>SCENE SOURCE</span><strong>PUBLIC CONFIG</strong></div>
             <div class="state-row"><span>TUTOR</span><strong id="tutor-status" class="pending">CONNECTING</strong></div>
           </section>
           <section class="observation-card">
             <div class="section-heading"><span>PUBLIC OBSERVATIONS</span><small>PUBLIC</small></div>
             <ul id="observations" class="observation-list"><li>Awaiting animation playback</li></ul>
+          </section>
+          <section class="learning-panel" aria-labelledby="learning-title">
+            <div class="section-heading"><span id="learning-title">INVESTIGATION</span><small id="learning-progress">0 / 3 EVIDENCE</small></div>
+            <div id="learning-error" class="learning-notice error" role="alert" aria-live="assertive" hidden></div>
+            <div id="learning-notice" class="learning-notice" role="status" aria-live="polite">正在创建学习会话…</div>
+            <div class="learning-block">
+              <div class="learning-label"><span>AVAILABLE EVIDENCE</span><small>VALUES RELEASE ON REQUEST</small></div>
+              <div id="evidence-options" class="evidence-options" aria-live="polite"></div>
+            </div>
+            <form id="hypothesis-form" class="hypothesis-form">
+              <label for="hypothesis-input">CURRENT HYPOTHESIS</label>
+              <textarea id="hypothesis-input" maxlength="2000" rows="3" placeholder="先请求证据，再写下你的可检验假设…" disabled></textarea>
+              <div class="form-footer">
+                <small id="hypothesis-hint">等待 Evidence 解锁</small>
+                <button id="hypothesis-submit" type="submit" disabled>SUBMIT HYPOTHESIS</button>
+              </div>
+            </form>
+            <div class="learning-block history-block">
+              <div class="learning-label"><span>HYPOTHESIS HISTORY</span><small id="hypothesis-count">0 REVISION</small></div>
+              <ol id="hypothesis-history" class="hypothesis-history"><li class="empty">尚未提交假设</li></ol>
+            </div>
           </section>
           <section class="tutor-panel" aria-labelledby="tutor-title">
             <div class="section-heading"><span id="tutor-title">DIAGNOSTIC TUTOR</span><small>PUBLIC CONTEXT</small></div>
