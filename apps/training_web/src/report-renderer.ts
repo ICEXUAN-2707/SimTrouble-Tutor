@@ -1,3 +1,4 @@
+import { evidenceName, sourceText } from "./ui-copy";
 import type {
   DiagnosisAssessment,
   DiagnosisType,
@@ -62,19 +63,17 @@ export function renderTrainingReport(container: HTMLElement, report: TrainingRep
   hero.dataset.assessment = report.diagnosis.assessment;
   const heroCopy = element("div", "");
   heroCopy.append(
-    element("small", "report-kicker", "SYSTEM ASSESSMENT"),
+    element("small", "report-kicker", "诊断评价"),
     element("strong", "report-assessment", assessmentLabels[report.diagnosis.assessment]),
-    element("code", "report-assessment-code", report.diagnosis.assessment),
   );
   const score = report.overall.score === null ? "未评价" : String(report.overall.score);
-  hero.append(heroCopy, metric("OVERALL SCORE", score, "overall-score"));
+  hero.append(heroCopy, metric("综合评分", score, "overall-score"));
   fragment.append(hero);
 
   const metrics = element("div", "report-metrics");
   metrics.append(
-    metric("COVERAGE", `${Math.round(report.overall.coverage * 100)}%`, "report-coverage"),
-    metric("RUBRIC", report.rubric_version),
-    metric("TUTOR MODE", report.tutor_mode === "llm" ? "LLM" : "SAFE FALLBACK", "report-tutor-mode"),
+    metric("评价覆盖率", `${Math.round(report.overall.coverage * 100)}%`, "report-coverage"),
+    metric("助教服务", report.tutor_mode === "llm" ? "智能引导" : "基础引导", "report-tutor-mode"),
   );
   fragment.append(metrics);
 
@@ -87,13 +86,13 @@ export function renderTrainingReport(container: HTMLElement, report: TrainingRep
     element("dt", "", "诊断理由"),
     element("dd", "", report.diagnosis.submitted.reasoning),
     element("dt", "", "参考解释"),
-    element("dd", "", report.diagnosis.reference_explanation),
+    element("dd", "", sourceText(report.diagnosis.reference_explanation)),
   );
   diagnosis.append(submitted);
   const evidence = element("div", "report-evidence");
   evidence.append(element("span", "", "引用证据"));
   for (const evidenceId of report.evidence_used) {
-    evidence.append(element("code", "", evidenceId));
+    evidence.append(element("code", "", evidenceName(evidenceId)));
   }
   diagnosis.append(evidence);
   fragment.append(diagnosis);
@@ -112,13 +111,11 @@ export function renderTrainingReport(container: HTMLElement, report: TrainingRep
       element(
         "span",
         "dimension-score",
-        result.status === "not_assessed" ? "未评价 / 无评价机会" : `${result.score} / 100`,
+        result.status === "not_assessed" || result.score === null ? "未评估" : `${result.score} / 100`,
       ),
     );
-    card.append(heading, element("p", "", result.rationale));
-    if (result.status === "scored") {
-      card.append(element("small", "dimension-weight", `服务端权重 ${Math.round(result.weight * 100)}%`));
-    }
+    card.append(heading, element("p", "", sourceText(result.rationale)));
+
     dimensionGrid.append(card);
   }
   dimensionSection.append(dimensionGrid);
@@ -127,9 +124,9 @@ export function renderTrainingReport(container: HTMLElement, report: TrainingRep
   const feedback = element("section", "report-section report-feedback");
   feedback.append(
     element("h3", "", "训练反馈"),
-    element("p", "", report.feedback_summary),
+    element("p", "", sourceText(report.feedback_summary)),
     element("h4", "", "下一步建议"),
-    element("p", "", report.next_learning_step),
+    element("p", "", sourceText(report.next_learning_step)),
   );
   fragment.append(feedback);
 
