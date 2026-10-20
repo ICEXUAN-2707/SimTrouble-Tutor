@@ -5,7 +5,7 @@ import { verifyLearningFlow } from "./learning-flow.mjs";
 import { verifyDiagnosisReportFlow } from "./diagnosis-report-flow.mjs";
 
 const browser = await chromium.launch({
-  channel: "msedge",
+  ...(process.env.SIMTROUBLE_BROWSER_CHANNEL ? { channel: process.env.SIMTROUBLE_BROWSER_CHANNEL } : {}),
   headless: true,
 });
 const baseUrl = process.env.SIMTROUBLE_URL ?? "http://127.0.0.1:5174";
@@ -16,17 +16,17 @@ try {
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
   await page.locator("#loading-state").waitFor({ state: "hidden" });
-  await page.locator("#tutor-status").filter({ hasText: "READY" }).waitFor();
-  assert.equal(await page.locator("#case-state").textContent(), "READY");
+  await page.locator("#tutor-status").filter({ hasText: "可用" }).waitFor({ state: "attached" });
+  assert.equal(await page.locator("#case-state").textContent(), "准备就绪");
   assert.equal(await page.locator("#fault-callout").isHidden(), true);
 
   await page.locator("#play-button").click();
-  await page.locator("#case-state").filter({ hasText: "FAILURE_OBSERVED" }).waitFor({ timeout: 10_000 });
+  await page.locator("#case-state").filter({ hasText: "发现异常" }).waitFor({ state: "attached", timeout: 10_000 });
   assert.equal(await page.locator("#fault-callout").isVisible(), true);
   assert.equal(await page.locator("#observations li").count(), 3);
 
   await page.locator("#reset-button").click();
-  assert.equal(await page.locator("#case-state").textContent(), "READY");
+  assert.equal(await page.locator("#case-state").textContent(), "准备就绪");
   assert.equal(await page.locator("#fault-callout").isHidden(), true);
   await verifyLearningFlow(page);
   await verifyDiagnosisReportFlow(page);

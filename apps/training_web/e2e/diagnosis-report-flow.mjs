@@ -2,20 +2,28 @@ import assert from "node:assert/strict";
 
 async function prepareDiagnosis(page, baseUrl) {
   await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
-  await page.locator("#tutor-status").filter({ hasText: "READY" }).waitFor();
+  await page.locator("#tutor-status").filter({ hasText: "可用" }).waitFor({ state: "attached" });
+  await page.locator('[data-step="evidence"]').click();
   await page.locator("[data-evidence-id='E01']").click();
-  await page.locator("[data-evidence-id='E01']").filter({ hasText: "RELEASED" }).waitFor();
+  await page.locator('[data-step="evidence"]').click();
+  await page.locator("[data-evidence-id='E01']").filter({ hasText: "收起证据" }).waitFor();
+  await page.locator('[data-step="hypothesis"]').click();
   await page.locator("#hypothesis-input").fill("夹爪没有保持工件。");
   await page.locator("#hypothesis-submit").click();
-  await page.locator("#hypothesis-history li").filter({ hasText: "夹爪没有保持工件。" }).waitFor();
+  await page.locator("#hypothesis-history li").filter({ hasText: "夹爪没有保持工件。" }).waitFor({ state: "attached" });
+  await page.locator('[data-step="evidence"]').click();
   await page.locator("[data-evidence-id='E02']").click();
-  await page.locator("[data-evidence-id='E02']").filter({ hasText: "RELEASED" }).waitFor();
+  await page.locator('[data-step="evidence"]').click();
+  await page.locator("[data-evidence-id='E02']").filter({ hasText: "收起证据" }).waitFor();
+  await page.locator('[data-step="hypothesis"]').click();
   await page.locator("#hypothesis-input").fill("物体 X 位姿与计划位置不一致。");
   await page.locator("#hypothesis-submit").click();
-  await page.locator("#diagnosis-status").filter({ hasText: "READY" }).waitFor();
+  await page.locator("#diagnosis-status").filter({ hasText: "可提交" }).waitFor({ state: "attached" });
 }
 
 async function fillDiagnosis(page, type, evidenceIds) {
+  await page.locator('[data-step="diagnosis"]').click();
+  await page.locator('[data-step="diagnosis"]').click();
   await page.locator("#diagnosis-type").selectOption(type);
   await page.locator("#diagnosis-reasoning").fill("已释放证据支持该诊断，且能够排除其他候选原因。");
   for (const evidenceId of evidenceIds) {
@@ -26,7 +34,7 @@ async function fillDiagnosis(page, type, evidenceIds) {
 
 function assertNoZeroSafety(page) {
   const safety = page.locator(".dimension-card[data-dimension='safety']");
-  return safety.filter({ hasText: "未评价 / 无评价机会" }).waitFor().then(async () => {
+  return safety.filter({ hasText: "未评估" }).waitFor().then(async () => {
     const snapshot = await safety.evaluate((node) => ({
       status: node.getAttribute("data-status"),
       text: node.textContent,
@@ -39,7 +47,7 @@ function assertNoZeroSafety(page) {
 export async function verifyDiagnosisReportFlow(page) {
   const sessionId = await page.locator("#session-code").getAttribute("title");
   assert.ok(sessionId);
-  assert.equal(await page.locator("#diagnosis-status").textContent(), "READY");
+  assert.equal(await page.locator("#diagnosis-status").textContent(), "可提交");
   assert.equal(await page.locator("#diagnosis-citations input").count(), 2);
   assert.equal(await page.locator("#diagnosis-citations input[value='E03']").count(), 0);
   assert.equal(await page.locator("#diagnosis-submit").isDisabled(), true);
@@ -67,7 +75,7 @@ export async function verifyDiagnosisReportFlow(page) {
   await fillDiagnosis(page, "object_pose_mismatch", ["E01", "E02"]);
   await page.locator("#diagnosis-submit").click();
   await page.locator("#report-retry").waitFor({ state: "visible" });
-  assert.equal(await page.locator("#session-stage").textContent(), "SUBMITTED");
+  assert.equal(await page.locator("#session-stage").textContent(), "已提交");
   assert.equal(await page.locator("#hypothesis-history li").count(), 2);
   assert.equal(await page.locator("#diagnosis-submit").isDisabled(), true);
 
@@ -75,9 +83,9 @@ export async function verifyDiagnosisReportFlow(page) {
   await page.locator(".report-hero[data-assessment='correct']").waitFor();
   assert.equal(await page.locator("[data-testid='overall-score']").textContent(), "91.75");
   assert.equal(await page.locator("[data-testid='report-coverage']").textContent(), "80%");
-  assert.equal(await page.locator("[data-testid='report-tutor-mode']").textContent(), "SAFE FALLBACK");
+  assert.equal(await page.locator("[data-testid='report-tutor-mode']").textContent(), "基础引导");
   await assertNoZeroSafety(page);
-  await page.locator("#session-stage").filter({ hasText: "REVIEWED" }).waitFor();
+  await page.locator("#session-stage").filter({ hasText: "已评估" }).waitFor({ state: "attached" });
   assert.equal(await page.locator("#session-code").getAttribute("title"), sessionId);
   assert.equal(reportRequests, 2);
 
@@ -112,7 +120,7 @@ export async function verifyAssessmentScenarios(browser, baseUrl) {
 export async function verifyDiagnosisErrors(browser, baseUrl) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   const failures = [
-    { status: 422, detail: "invalid_evidence_reference", text: "诊断引用包含未释放的 Evidence" },
+    { status: 422, detail: "invalid_evidence_reference", text: "诊断引用包含未释放的证据" },
     { status: 409, detail: "invalid_session_stage", text: "当前学习阶段不允许提交诊断" },
     { status: 409, detail: "diagnosis_already_submitted", text: "本会话已提交过诊断" },
   ];
@@ -133,6 +141,7 @@ export async function verifyDiagnosisErrors(browser, baseUrl) {
     });
 
     assert.equal(await page.locator("#diagnosis-submit").isDisabled(), true);
+    await page.locator('[data-step="diagnosis"]').click();
     await page.locator("#diagnosis-type").selectOption("object_pose_mismatch");
     assert.equal(await page.locator("#diagnosis-submit").isDisabled(), true);
     await page.locator("#diagnosis-reasoning").fill("保留此理由以验证错误恢复。");

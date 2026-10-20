@@ -9,7 +9,7 @@ import {
   verifyResponsiveDiagnosisFlows,
 } from "./diagnosis-report-flow.mjs";
 
-const browserChannel = process.env.SIMTROUBLE_BROWSER_CHANNEL ?? "msedge";
+const browserChannel = process.env.SIMTROUBLE_BROWSER_CHANNEL ?? "bundled";
 const launchOptions = { headless: true };
 if (browserChannel !== "bundled") launchOptions.channel = browserChannel;
 
@@ -22,21 +22,21 @@ try {
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
   await page.locator("#loading-state").waitFor({ state: "hidden" });
-  await page.locator("#tutor-status").filter({ hasText: "READY" }).waitFor();
-  assert.equal(await page.locator("#case-state").textContent(), "READY");
+  await page.locator("#tutor-status").filter({ hasText: "可用" }).waitFor({ state: "attached" });
+  assert.equal(await page.locator("#case-state").textContent(), "准备就绪");
   assert.equal(await page.locator("#fault-callout").isHidden(), true);
 
   await page.locator("#play-button").click();
   await page.waitForTimeout(150);
   await page.locator("#play-button").click();
-  assert.equal(await page.locator("#play-button").textContent(), "PLAY");
+  assert.equal(await page.locator("#play-button").textContent(), "播放");
   await page.locator("#play-button").click();
-  await page.locator("#case-state").filter({ hasText: "GRASP_ATTEMPT" }).waitFor({ timeout: 10_000 });
+  await page.locator("#case-state").filter({ hasText: "尝试抓取" }).waitFor({ state: "attached", timeout: 10_000 });
   await page.waitForFunction(() => window.__SIMTROUBLE_INSPECT__().endEffectorDistance < 0.01);
   const grasp = await page.evaluate(() => window.__SIMTROUBLE_INSPECT__());
   assert.equal(grasp.objectAttached, false);
   assert.ok(grasp.endEffectorDistance < 0.01, `grasp distance was ${grasp.endEffectorDistance}`);
-  await page.locator("#case-state").filter({ hasText: "FAILURE_OBSERVED" }).waitFor({ timeout: 10_000 });
+  await page.locator("#case-state").filter({ hasText: "发现异常" }).waitFor({ state: "attached", timeout: 10_000 });
   await page.waitForFunction(() => window.__SIMTROUBLE_INSPECT__().endEffectorDistance > 0.9);
   const failure = await page.evaluate(() => window.__SIMTROUBLE_INSPECT__());
   assert.equal(failure.objectAttached, false);
@@ -49,14 +49,14 @@ try {
   assert.equal(await page.locator("#observations li").count(), 3);
 
   await page.locator("#reset-button").click();
-  assert.equal(await page.locator("#case-state").textContent(), "READY");
+  assert.equal(await page.locator("#case-state").textContent(), "准备就绪");
   assert.equal(await page.locator("#fault-callout").isHidden(), true);
   await page.locator("[data-tool='pan']").click();
   assert.equal(await page.locator("[data-tool='pan']").getAttribute("class"), "tool active");
   assert.equal(await page.locator("[data-tool='orbit']").getAttribute("class"), "tool");
   await page.locator("[data-tool='fit']").click();
   await page.locator("#skip-button").click();
-  assert.equal(await page.locator("#case-state").textContent(), "EXECUTING");
+  assert.equal(await page.locator("#case-state").textContent(), "正在执行");
   const skipped = await page.evaluate(() => window.__SIMTROUBLE_INSPECT__());
   await page.locator("#play-button").click();
   await page.waitForTimeout(50);
@@ -69,6 +69,17 @@ try {
   assert.ok(resumeDisplacement < 0.25, `skip/play pose rolled back by ${resumeDisplacement}`);
   await verifyLearningFlow(page);
   await verifyDiagnosisReportFlow(page);
+  const visibleEnglish = await page.evaluate(() => {
+    const visible = (element) => {
+      const style = getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+    };
+    return [...document.querySelectorAll('body *')]
+      .filter((element) => visible(element) && element.children.length === 0 && /[A-Za-z]{2,}/.test(element.textContent ?? ''))
+      .map((element) => element.textContent.trim());
+  });
+  assert.deepEqual(visibleEnglish, []);
   assert.deepEqual(errors, []);
   await page.close();
   await verifyTutorDeliveryScenarios(browser, baseUrl);

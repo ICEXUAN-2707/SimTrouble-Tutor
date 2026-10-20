@@ -49,8 +49,9 @@ export async function verifyTutorDeliveryScenarios(browser, baseUrl) {
 
   try {
     await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
-    await page.locator("#tutor-status").filter({ hasText: "READY" }).waitFor();
+    await page.locator("#tutor-status").filter({ hasText: "可用" }).waitFor({ state: "attached" });
     for (const [prompt, scenario] of scenarios) {
+      if (!(await page.locator("#assistant-dialog").evaluate(d => d.open))) await page.locator("#assistant-open").click();
       await page.locator("#tutor-input").fill(prompt);
       await page.locator("#tutor-submit").click();
       const response = page.locator(`.tutor-message.tutor[data-mode="${scenario.mode}"]`, {
