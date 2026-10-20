@@ -1,4 +1,4 @@
-"""Tutor orchestration: safe context, policy, provider, validation, fallback."""
+"""Tutor orchestration: safe context, policy, provider, validation, guard, fallback."""
 
 from __future__ import annotations
 
@@ -9,16 +9,17 @@ from threading import RLock
 from time import perf_counter
 from typing import Callable
 
-from ..learning_models import TutorMode, TutorResponse
+from ..learning_models import TutorMode, TutorRequest, TutorResponse
 from ..session_models import TutorTurnResponse
 from ..session_service import SessionService
 from .context import TutorContextProjector
 from .conversation import TutorConversationStore
-from .deepseek import DeepSeekResponsesAdapter
 from .fallback import RuleTutor
+from .guard import TutorOutputGuard
 from .policy import TutorPolicy
 from .ports import TutorProvider, TutorProviderError
-from .settings import DeepSeekSettings
+from .providers.registry import TutorProviderRegistry
+from .settings import LLMProviderSettings
 from .telemetry import TutorMetricEvent, TutorMetrics
 from .validation import UnsafeTutorResponseError, validate_tutor_response
 
@@ -32,6 +33,8 @@ class TutorService:
         sessions: SessionService,
         *,
         provider: TutorProvider | None = None,
+        provider_disabled_reason: str = "llm_disabled",
+        guard: TutorOutputGuard | None = None,
         conversations: TutorConversationStore | None = None,
         projector: TutorContextProjector | None = None,
         policy: TutorPolicy | None = None,
@@ -41,6 +44,12 @@ class TutorService:
     ) -> None:
         self._sessions = sessions
         self._provider = provider
+        self._provider_disabled_reason = (
+            provider_disabled_reason
+            if _SAFE_REASON.fullmatch(provider_disabled_reason)
+            else "llm_config_invalid"
+        )
+        self._guard = guard
         self._conversations = conversations or TutorConversationStore()
         self._projector = projector or TutorContextProjector()
         self._policy = policy or TutorPolicy()
@@ -51,8 +60,6 @@ class TutorService:
         self._session_locks_guard = RLock()
 
     async def ask(self, session_id: str, learner_message: str) -> TutorTurnResponse:
-        # Validate before allocating a long-lived per-Session lock. Sessions are
-        # process-local and currently have no deletion path.
         self._sessions.get(session_id)
         async with self._lock_for(session_id):
             return await self._ask_serialized(session_id, learner_message)
@@ -78,7 +85,7 @@ class TutorService:
 
         mode = TutorMode.RULE_FALLBACK
         retry_count = 0
-        fallback_reason: str | None = "llm_disabled"
+        fallback_reason: str | None = self._provider_disabled_reason
         response: TutorResponse
         if self._provider is None:
             response = self._fallback.generate(request, decision)
@@ -86,11 +93,8 @@ class TutorService:
             try:
                 generation = await self._provider.generate(request, decision)
                 retry_count = generation.attempts - 1
-                response = validate_tutor_response(
-                    request,
-                    decision,
-                    generation.response,
-                )
+                response = validate_tutor_response(request, decision, generation.response)
+                response = self._validate_with_guard(request, response)
                 mode = TutorMode.LLM
                 fallback_reason = None
             except (TutorProviderError, UnsafeTutorResponseError) as exc:
@@ -99,18 +103,13 @@ class TutorService:
                 )
                 if isinstance(exc, TutorProviderError):
                     retry_count = max(0, exc.attempts - 1)
-                logger.warning(
-                    "Tutor provider fell back to rules: %s",
-                    fallback_reason,
-                )
+                logger.warning("Tutor provider fell back to rules: %s", fallback_reason)
                 response = self._fallback.generate(request, decision)
 
         latency_ms = max(0, round((self._clock() - started) * 1_000))
         if mode is TutorMode.LLM:
             self._sessions.record_tutor_delivered(
-                session_id,
-                latency_ms=latency_ms,
-                retry_count=retry_count,
+                session_id, latency_ms=latency_ms, retry_count=retry_count
             )
         else:
             assert fallback_reason is not None
@@ -134,6 +133,20 @@ class TutorService:
             tutor_mode=mode,
         )
 
+    def _validate_with_guard(
+        self,
+        request: TutorRequest,
+        response: TutorResponse,
+    ) -> TutorResponse:
+        if self._guard is None:
+            return response
+        try:
+            return self._guard.validate(request, response)
+        except UnsafeTutorResponseError:
+            raise
+        except Exception as exc:
+            raise UnsafeTutorResponseError("guard_internal_error") from exc
+
     def _lock_for(self, session_id: str) -> asyncio.Lock:
         with self._session_locks_guard:
             return self._session_locks.setdefault(session_id, asyncio.Lock())
@@ -141,10 +154,12 @@ class TutorService:
 
 def build_tutor_service(
     sessions: SessionService,
-    settings: DeepSeekSettings | None = None,
+    settings: LLMProviderSettings | None = None,
 ) -> TutorService:
-    resolved = settings or DeepSeekSettings.from_env()
-    provider: TutorProvider | None = None
-    if resolved.configured:
-        provider = DeepSeekResponsesAdapter(resolved)
-    return TutorService(sessions, provider=provider)
+    result = TutorProviderRegistry().build(settings=settings)
+    return TutorService(
+        sessions,
+        provider=result.provider,
+        provider_disabled_reason=result.disabled_reason or "llm_disabled",
+        guard=TutorOutputGuard.from_default_cases(),
+    )
