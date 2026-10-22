@@ -1,17 +1,19 @@
 # Product v0.4 Task Plan
 
-> Status: active integration plan
+> Status: integration candidate; implementation complete through T4B, release gate open
 > Contract authority: CONTRACT_FREEZE.md and contracts/v0.4/
 
 ## Delivery status
 
 - T0 product and contract baseline: complete.
 - T1 CAD scene and Session API: complete.
-- T2A bounded Tutor backend foundation: complete on the current task branch.
+- T2A bounded Tutor backend foundation: complete on the integration candidate.
 - T2B Tutor frontend, Trace and runtime hardening: implementation complete;
   credential-gated live-provider smoke remains an explicit release check.
-- T3 Diagnosis, Evaluator, deterministic scoring and Report: implementation complete on the current task branch.
-- T4 integrated MVP and release gate: not started.
+- T2C provider registry, configuration resilience and Case-aware output guard: complete on the integration candidate.
+- T3 Diagnosis, Evaluator, deterministic scoring and Report: implementation complete on the integration candidate.
+- T4A/T4B integrated learner workflow and localized product UI: implementation complete on the integration candidate.
+- T4 release gate: open; one-click launch, credential-gated provider smoke, dependency audit and Phase integration remain.
 
 ## T0 — Baseline
 
@@ -56,6 +58,18 @@ Implementation status: complete. The repository includes a credential-gated
 `tools/deepseek_tutor_smoke.py`; it must be run once with a real key before the
 phase gate, because CI and the repository do not contain provider credentials.
 
+## T2C — Provider and output-safety hardening
+
+- Select DeepSeek Responses or an approved OpenAI-compatible provider through one registry.
+- Support Qwen, Kimi and SiliconFlow presets without changing the public Tutor contract.
+- Treat invalid configuration and missing credentials as safe rule-fallback conditions.
+- Validate model output with a Case-aware guard for hidden answers, private paths and unreleased Evidence.
+- Keep API keys, full prompts, private Case values and provider error bodies out of API responses, Trace and metrics.
+
+Implementation status: complete. Unit tests cover registry selection, endpoint
+validation, configuration failure, bounded retry, structured output and Guard
+allow/deny paths without making real provider calls.
+
 ## T3 — Diagnosis and learning evaluation
 
 - Accept one structured diagnosis with reasoning and released Evidence IDs.
@@ -86,6 +100,14 @@ weight.
 - Verify animation replay never changes learning Trace or scores.
 - Validate desktop, tablet and phone layouts.
 - Freeze the 90–120 second demonstration path.
+
+Implementation status: T4A/T4B are complete. The localized responsive web
+workspace binds CAD playback, Evidence, initial and revised Hypotheses, Tutor,
+create-once Diagnosis and the authoritative Report to one page-lifetime
+Session. Browser fixtures cover the learner workflow, API recovery, Tutor
+delivery modes and desktop/tablet/mobile layouts. The overall T4 gate remains
+open until the launcher, credential-gated provider smoke, dependency audit and
+Phase integration are complete.
 
 ## Phase gate
 

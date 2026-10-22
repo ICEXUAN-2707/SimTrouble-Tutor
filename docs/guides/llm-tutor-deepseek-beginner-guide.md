@@ -81,18 +81,21 @@ DeepSeek 官方说明 Responses API 是无状态的：服务端不替我们保�
 
 ### apps/training_api/tutor/settings.py
 
-从环境变量读取 DeepSeek 配置。默认关闭 LLM，所以没有 Key 也能运行。
+从环境变量读取 Provider 配置。默认关闭 LLM，所以没有 Key 也能运行；本手册继续以 DeepSeek 为例。
 
 | 环境变量 | 默认值 | 作用 |
 |---|---:|---|
 | SIMTROUBLE_LLM_ENABLED | false | 是否启用真实 LLM |
+| SIMTROUBLE_LLM_PROVIDER | deepseek | Provider：deepseek / qwen / kimi / siliconflow |
+| SIMTROUBLE_LLM_MODEL | Provider 默认值 | 模型名 |
+| SIMTROUBLE_LLM_BASE_URL | Provider 官方地址 | API 地址；会进行 URL 安全校验 |
+| SIMTROUBLE_LLM_TIMEOUT_SECONDS | 8 | 单次网络超时 |
+| SIMTROUBLE_LLM_MAX_RETRIES | 1 | 瞬时故障重试次数 |
 | DEEPSEEK_API_KEY | 无 | DeepSeek 密钥 |
-| DEEPSEEK_BASE_URL | https://api.deepseek.com | API 地址 |
-| DEEPSEEK_MODEL | deepseek-flash | 模型名 |
-| DEEPSEEK_TIMEOUT_SECONDS | 8 | 单次网络超时 |
-| DEEPSEEK_MAX_RETRIES | 1 | 瞬时故障重试次数 |
 
-api_key 字段设置了 repr=False，避免调试打印配置时泄漏密钥。
+旧版 `DEEPSEEK_BASE_URL`、`DEEPSEEK_MODEL`、`DEEPSEEK_TIMEOUT_SECONDS` 和
+`DEEPSEEK_MAX_RETRIES` 仍兼容一个迁移周期，新版通用变量优先。
+`api_key` 字段设置了 `repr=False`，避免调试打印配置时泄漏密钥。
 
 ### apps/training_api/tutor/ports.py
 
@@ -218,8 +221,9 @@ python -m venv .venv
 
 ~~~powershell
 $env:SIMTROUBLE_LLM_ENABLED = "true"
+$env:SIMTROUBLE_LLM_PROVIDER = "deepseek"
 $env:DEEPSEEK_API_KEY = "替换成你自己的Key"
-$env:DEEPSEEK_MODEL = "deepseek-flash"
+$env:SIMTROUBLE_LLM_MODEL = "deepseek-flash"
 .\.venv\Scripts\python.exe -B -m apps.training_api
 ~~~
 
@@ -313,18 +317,26 @@ project context → decide policy → call provider → validate → fallback
 
 1. 在 RuleTutor 中修改一条回复，运行对应测试；
 2. 给 TutorPolicy 新增一个不会泄露答案的规则，并先写测试；
-3. 把 DEEPSEEK_MAX_RETRIES 改成 0，观察 503 测试应怎样变化；
+3. 把 SIMTROUBLE_LLM_MAX_RETRIES 改成 0，观察 503 测试应怎样变化；
 4. 构造一个 suggested_action 越权响应，确认 tutor_mode 变成 rule_fallback；
 5. 新建两个 Session 连续对话，确认历史不会互相出现。
 
-## 11. 第一批之后还要做什么
+## 11. 第一批之后的完成状态
 
-1. 前端 Tutor 面板接入真实 /tutor 路由；
-2. 在 Trace 中记录 Tutor 请求、交付和回退事件，但不存原始 Prompt；
-3. 增加同一 Session 并发请求串行化；
-4. 增加调用耗时、fallback 原因、Token 用量等脱敏指标；
-5. 用真实 DeepSeek Key 做人工 smoke test；
-6. 完成 diagnosis、Evaluator 与确定性五维评分，不让 LLM 直接给最终分数。
+后续产品批次已经完成：
+
+1. 前端 Tutor 面板接入正式 `/tutor` 路由；
+2. Trace 记录 Tutor 请求、交付和回退事件，不存原始 Prompt；
+3. 同一 Session 并发请求串行化；
+4. 调用耗时、模式、重试和 fallback 原因等脱敏指标；
+5. Diagnosis、Evaluator 与确定性五维评分和报告；
+6. Provider Registry、OpenAI-compatible Adapter、配置容错和 Case-aware Output Guard。
+
+发布前仍需完成：
+
+1. 使用真实 Provider Key 执行 credential-gated smoke；
+2. 按发布门运行依赖审计和完整浏览器 E2E；
+3. 后续再评估 token usage、持久化、认证和流式输出。这些能力不影响当前规则回退闭环。
 
 ## 12. 官方参考
 

@@ -1,5 +1,11 @@
 # LLM Tutor Batch 1 Implementation Note
 
+> Historical batch record. Batch 1 boundaries below describe the original
+> foundation delivery. Later Product v0.4 batches have since added Tutor Trace,
+> frontend integration, provider registry, Case-aware output Guard, Diagnosis,
+> deterministic scoring and Report generation. Persistence, authentication,
+> streaming and LangGraph remain outside the current implementation.
+
 ## Scope
 
 This batch delivers the minimum safe backend loop for the frozen Product v0.4
