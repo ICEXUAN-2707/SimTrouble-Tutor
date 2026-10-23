@@ -1,6 +1,20 @@
 import { defineConfig } from "vite";
 
 export default defineConfig({
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: "three-runtime",
+              test: /node_modules[\\/]three[\\/]/,
+            },
+          ],
+        },
+      },
+    },
+  },
   server: {
     port: 5174,
     strictPort: true,
