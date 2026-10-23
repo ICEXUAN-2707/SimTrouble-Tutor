@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://simtrouble.local/contracts/v0.4/tutor-request.schema.json",
+  "title": "TutorRequestV04",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "session_id",
+    "case_public_state",
+    "released_evidence",
+    "messages",
+    "hypotheses",
+    "current_hypothesis",
+    "allowed_actions"
+  ],
+  "properties": {
+    "contract_version": {"type": "string", "pattern": "^0\\.4\\.[0-9]+$"},
+    "session_id": {"type": "string", "minLength": 1},
+    "case_public_state": {"$ref": "../schemas/case-public.schema.json"},
+    "released_evidence": {
+      "type": "array",
+      "items": {"$ref": "../schemas/evidence-public.schema.json"}
+    },
+    "messages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "content"],
+        "properties": {
+          "role": {"enum": ["learner", "tutor"]},
+          "content": {"type": "string", "minLength": 1, "maxLength": 2000}
+        }
+      }
+    },
+    "hypotheses": {"type": "array", "items": {"type": "string"}},
+    "current_hypothesis": {"type": ["string", "null"]},
+    "allowed_actions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "observe_scene",
+          "inspect_evidence",
+          "submit_hypothesis",
+          "revise_hypothesis",
+          "submit_diagnosis",
+          "reflect"
+        ]
+      }
+    }
+  }
+}
+

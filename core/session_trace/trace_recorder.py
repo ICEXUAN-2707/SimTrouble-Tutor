@@ -21,6 +21,12 @@ TraceActionType = Literal[
     "HypothesisAdded",
     "HypothesisUpdated",
     "HypothesisRejected",
+    "TutorRequested",
+    "TutorDelivered",
+    "TutorFallback",
+    "DiagnosisSubmitted",
+    "DiagnosisEvaluated",
+    "ReportGenerated",
     "SessionFinished",
 ]
 
@@ -141,6 +147,104 @@ class SessionTraceRecorder:
             session,
             action_type="HypothesisRejected",
             result={"status": "rejected", "reason": "empty_hypothesis"},
+        )
+
+    def record_tutor_requested(
+        self,
+        session: LearnerSession,
+        *,
+        policy_rule_id: str,
+        hint_level: int,
+        suggested_action: str | None,
+    ) -> None:
+        self._record(
+            session,
+            action_type="TutorRequested",
+            result={
+                "status": "requested",
+                "policy_rule_id": policy_rule_id,
+                "hint_level": hint_level,
+                "suggested_action": suggested_action,
+            },
+        )
+
+    def record_tutor_delivered(
+        self,
+        session: LearnerSession,
+        *,
+        latency_ms: int,
+        retry_count: int,
+    ) -> None:
+        self._record(
+            session,
+            action_type="TutorDelivered",
+            result={
+                "status": "delivered",
+                "mode": "llm",
+                "latency_ms": latency_ms,
+                "retry_count": retry_count,
+            },
+        )
+
+    def record_tutor_fallback(
+        self,
+        session: LearnerSession,
+        *,
+        latency_ms: int,
+        retry_count: int,
+        reason: str,
+    ) -> None:
+        self._record(
+            session,
+            action_type="TutorFallback",
+            result={
+                "status": "fallback",
+                "mode": "rule_fallback",
+                "latency_ms": latency_ms,
+                "retry_count": retry_count,
+                "reason": reason,
+            },
+        )
+
+    def record_diagnosis_submitted(
+        self,
+        session: LearnerSession,
+        *,
+        diagnosis_type: str,
+        cited_evidence_ids: tuple[str, ...],
+    ) -> None:
+        self._record(
+            session,
+            action_type="DiagnosisSubmitted",
+            result={
+                "status": "submitted",
+                "diagnosis_type": diagnosis_type,
+                "cited_evidence_ids": list(cited_evidence_ids),
+            },
+        )
+
+    def record_diagnosis_evaluated(
+        self,
+        session: LearnerSession,
+        *,
+        assessment: str,
+    ) -> None:
+        self._record(
+            session,
+            action_type="DiagnosisEvaluated",
+            result={"status": "evaluated", "assessment": assessment},
+        )
+
+    def record_report_generated(
+        self,
+        session: LearnerSession,
+        *,
+        rubric_version: str,
+    ) -> None:
+        self._record(
+            session,
+            action_type="ReportGenerated",
+            result={"status": "generated", "rubric_version": rubric_version},
         )
 
     def _record(
