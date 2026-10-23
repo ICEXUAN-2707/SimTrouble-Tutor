@@ -13,6 +13,9 @@
 - T2C provider registry, configuration resilience and Case-aware output guard: complete on the integration candidate.
 - T3 Diagnosis, Evaluator, deterministic scoring and Report: implementation complete on the integration candidate.
 - T4A/T4B integrated learner workflow and localized product UI: implementation complete on the integration candidate.
+- M1 Step-4 diagnosis unlock: regression fix complete on the repair candidate;
+  Evidence may be collected before the initial Hypothesis, while one revised
+  Hypothesis remains mandatory before Diagnosis.
 - T4 release gate: open; one-click launch, credential-gated provider smoke, dependency audit and Phase integration remain.
 
 ## T0 — Baseline
@@ -105,7 +108,11 @@ Implementation status: T4A/T4B are complete. The localized responsive web
 workspace binds CAD playback, Evidence, initial and revised Hypotheses, Tutor,
 create-once Diagnosis and the authoritative Report to one page-lifetime
 Session. Browser fixtures cover the learner workflow, API recovery, Tutor
-delivery modes and desktop/tablet/mobile layouts. The overall T4 gate remains
+delivery modes and desktop/tablet/mobile layouts. The Step-4 regression suite
+also covers collecting every available Evidence item before the initial
+Hypothesis; the first Hypothesis now enters TEST immediately, and the revised
+Hypothesis unlocks Diagnosis without requiring another Evidence request. The
+overall T4 gate remains
 open until the launcher, credential-gated provider smoke, dependency audit and
 Phase integration are complete.
 
