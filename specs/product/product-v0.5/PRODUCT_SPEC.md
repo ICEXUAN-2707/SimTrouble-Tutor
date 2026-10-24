@@ -58,9 +58,21 @@ they remain process-local and are lost when the API restarts.
 Database schema changes are versioned and fail closed when a newer unsupported
 schema is encountered. Runtime database files remain outside Git.
 
+Failed-login storage is bounded in both time and cardinality. Expired failure
+windows and locks are eligible for cleanup. Registered accounts retain at most
+one row each; unknown username keys retain at most 4096 rows in total, with the
+oldest unknown key evicted after stale cleanup. Consequently the table contains
+no more than the number of registered users plus 4096 rows.
+
 ## 5. Security baseline
 
 - Passwords use a versioned salted password-based derivation format.
+- Registration accepts exact 15-128-code-point passwords without trimming,
+  Unicode normalization or character-class composition requirements. Login
+  accepts 1-128 code points to preserve verification compatibility.
+- Usernames use the frozen request-schema character set and length. They are
+  stored as supplied, while uniqueness and login matching lowercase ASCII
+  letters. Display names are optional and default to the username.
 - Authentication tokens contain at least 256 bits of randomness; SQLite stores
   only their SHA-256 digests.
 - Authentication cookies are `HttpOnly`, `SameSite=Lax`, path `/`, and use
@@ -102,4 +114,7 @@ schema is encountered. Runtime database files remain outside Git.
 - Product v0.4 anonymous regression tests remain green.
 - All Product v0.4 Python, TypeScript, production-build and browser gates pass.
 - No `.db`, `.env`, local secret, `.venv` or generated build file is committed.
-
+- Registration and login request schemas reject missing, unknown, malformed and
+  boundary-violating fields in contract tests.
+- Failed-login cleanup and capacity tests prove
+  `login_failures rows <= registered users + 4096` under unknown-name churn.

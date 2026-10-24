@@ -13,6 +13,7 @@
 
 - Add versioned SQLite schema initialization.
 - Add account creation, password verification and login-rate limiting.
+- Bound failed-login persistence by expiry and a 4096-row unknown-name cap.
 - Add revocable server-side authentication sessions.
 - Add register, login, identity restore and logout routes.
 - Add security headers and configuration validation.
@@ -41,4 +42,3 @@
 
 The Phase may enter `develop` only after Product v0.4 has entered `develop` and
 all T4 checks pass.
-
