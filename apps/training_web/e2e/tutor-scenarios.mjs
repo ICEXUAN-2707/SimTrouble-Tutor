@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { registerAndEnter } from "./auth-flow.mjs";
 
 export async function verifyTutorDeliveryScenarios(browser, baseUrl) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
@@ -9,7 +10,7 @@ export async function verifyTutorDeliveryScenarios(browser, baseUrl) {
     ["answer leakage", { mode: "rule_fallback", message: "内容未通过安全检查，已切换为规则引导。" }],
   ]);
 
-  await page.route("**/api/v0.4/sessions/*/tutor", async (route) => {
+  await page.route("**/api/v0.5/sessions/*/tutor", async (route) => {
     const body = route.request().postDataJSON();
     const scenario = scenarios.get(body.message);
     assert.ok(scenario, `unexpected Tutor scenario: ${body.message}`);
@@ -48,7 +49,7 @@ export async function verifyTutorDeliveryScenarios(browser, baseUrl) {
   });
 
   try {
-    await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
+    await registerAndEnter(page, baseUrl, "tutor");
     await page.locator("#tutor-status").filter({ hasText: "可用" }).waitFor({ state: "attached" });
     for (const [prompt, scenario] of scenarios) {
       if (!(await page.locator("#assistant-dialog").evaluate(d => d.open))) await page.locator("#assistant-open").click();

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from jsonschema import Draft202012Validator, RefResolver
 
+from apps.training_api.auth.models import AuthSessionV05, AuthUserV05
 
 ROOT = Path(__file__).resolve().parents[2]
 CONTRACTS = ROOT / "contracts" / "v0.5"
@@ -38,17 +39,16 @@ class AuthContractTests(unittest.TestCase):
             store={user_schema["$id"]: user_schema, "auth-user.schema.json": user_schema},
         )
         validator = Draft202012Validator(session_schema, resolver=resolver)
-        validator.validate(
-            {
-                "user": {
-                    "user_id": "e3f7df35-43b4-4598-aadc-25a957c6f6ef",
-                    "username": "learner01",
-                    "display_name": "Learner",
-                },
-                "expires_at": 1_800_000_000,
-                "csrf_token": "x" * 32,
-            }
+        runtime = AuthSessionV05(
+            user=AuthUserV05(
+                user_id="e3f7df35-43b4-4598-aadc-25a957c6f6ef",
+                username="learner01",
+                display_name="Learner",
+            ),
+            expires_at=1_800_000_000,
+            csrf_token="x" * 32,
         )
+        validator.validate(runtime.model_dump(mode="json"))
 
 
 if __name__ == "__main__":

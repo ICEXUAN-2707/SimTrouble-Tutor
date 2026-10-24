@@ -2,7 +2,7 @@ name: Product v0.4
 
 on:
   push:
-    branches: [main, develop, "phase/product-v0.4"]
+    branches: [main, develop, "phase/product-v0.4", "phase/product-v0.5-identity-persistence"]
   pull_request:
 
 permissions:

@@ -1,0 +1,162 @@
+from __future__ import annotations
+
+import tempfile
+import unittest
+from pathlib import Path
+
+from httpx import ASGITransport, AsyncClient
+
+from apps.training_api.auth.repository import AuthenticationStore
+from apps.training_api.main import CSRF_COOKIE_NAME, create_app
+from apps.training_api.session_service import SessionService
+from apps.training_api.tutor.service import TutorService
+
+
+class AuthenticationApiTests(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self) -> None:
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        store = AuthenticationStore(Path(directory.name) / "auth.db")
+        sessions = SessionService()
+        self.app = create_app(
+            session_service=sessions,
+            tutor_service=TutorService(sessions),
+            authentication_store=store,
+        )
+        transport = ASGITransport(app=self.app)
+        self.alice = AsyncClient(transport=transport, base_url="http://testserver")
+        self.bob = AsyncClient(transport=transport, base_url="http://testserver")
+
+    async def asyncTearDown(self) -> None:
+        await self.alice.aclose()
+        await self.bob.aclose()
+
+    async def register(self, client: AsyncClient, username: str) -> dict:
+        response = await client.post(
+            "/api/v0.5/auth/register",
+            json={
+                "username": username,
+                "password": "correct-horse",
+                "display_name": username.title(),
+            },
+        )
+        self.assertEqual(201, response.status_code, response.text)
+        return response.json()
+
+    def csrf_headers(self, client: AsyncClient) -> dict[str, str]:
+        token = client.cookies.get(CSRF_COOKIE_NAME)
+        assert token is not None
+        return {"X-CSRF-Token": token}
+
+    async def test_register_restore_logout_and_security_headers(self) -> None:
+        registered = await self.register(self.alice, "alice01")
+        self.assertEqual("alice01", registered["user"]["username"])
+        self.assertNotIn("password", str(registered))
+
+        current = await self.alice.get("/api/v0.5/auth/me")
+        self.assertEqual(200, current.status_code)
+        self.assertEqual("nosniff", current.headers["x-content-type-options"])
+        self.assertEqual("DENY", current.headers["x-frame-options"])
+
+        rejected = await self.alice.post("/api/v0.5/auth/logout")
+        self.assertEqual(403, rejected.status_code)
+        logged_out = await self.alice.post(
+            "/api/v0.5/auth/logout", headers=self.csrf_headers(self.alice)
+        )
+        self.assertEqual(204, logged_out.status_code)
+        self.assertEqual(401, (await self.alice.get("/api/v0.5/auth/me")).status_code)
+
+    async def test_login_errors_are_stable_and_bodies_are_not_echoed(self) -> None:
+        invalid_registration = await self.alice.post(
+            "/api/v0.5/auth/register",
+            json={"username": "x", "password": "secret-value"},
+        )
+        self.assertEqual(400, invalid_registration.status_code)
+        self.assertEqual("invalid_registration", invalid_registration.json()["detail"])
+        self.assertNotIn("secret-value", invalid_registration.text)
+
+        invalid_login = await self.alice.post(
+            "/api/v0.5/auth/login",
+            json={"username": "missing", "password": "secret-value"},
+        )
+        self.assertEqual(401, invalid_login.status_code)
+        self.assertEqual("invalid_credentials", invalid_login.json()["detail"])
+        self.assertNotIn("secret-value", invalid_login.text)
+
+    async def test_authenticated_training_session_enforces_owner_and_csrf(self) -> None:
+        await self.register(self.alice, "alice01")
+        await self.register(self.bob, "bob0001")
+
+        no_csrf = await self.alice.post(
+            "/api/v0.5/sessions", json={"case_id": "ST-001"}
+        )
+        self.assertEqual(403, no_csrf.status_code)
+
+        created = await self.alice.post(
+            "/api/v0.5/sessions",
+            json={"case_id": "ST-001"},
+            headers=self.csrf_headers(self.alice),
+        )
+        self.assertEqual(201, created.status_code, created.text)
+        session_id = created.json()["session_id"]
+
+        owner_read = await self.alice.get(f"/api/v0.5/sessions/{session_id}")
+        wrong_owner = await self.bob.get(f"/api/v0.5/sessions/{session_id}")
+        anonymous_bypass = await self.alice.get(f"/api/v0.4/sessions/{session_id}")
+        self.assertEqual(200, owner_read.status_code)
+        self.assertEqual(404, wrong_owner.status_code)
+        self.assertEqual("session_not_found", wrong_owner.json()["detail"])
+        self.assertEqual(404, anonymous_bypass.status_code)
+
+        evidence = await self.alice.post(
+            f"/api/v0.5/sessions/{session_id}/evidence",
+            json={"evidence_id": "E01"},
+            headers=self.csrf_headers(self.alice),
+        )
+        self.assertEqual(200, evidence.status_code, evidence.text)
+
+    async def test_missing_authentication_fails_closed(self) -> None:
+        response = await self.alice.post(
+            "/api/v0.5/sessions",
+            json={"case_id": "ST-001"},
+            headers={"X-CSRF-Token": "x" * 32},
+        )
+        self.assertEqual(401, response.status_code)
+        self.assertEqual("authentication_required", response.json()["detail"])
+
+    async def test_wrong_owner_is_hidden_across_every_training_command(self) -> None:
+        await self.register(self.alice, "alice01")
+        await self.register(self.bob, "bob0001")
+        created = await self.alice.post(
+            "/api/v0.5/sessions",
+            json={"case_id": "ST-001"},
+            headers=self.csrf_headers(self.alice),
+        )
+        session_id = created.json()["session_id"]
+        headers = self.csrf_headers(self.bob)
+        attempts = (
+            ("post", f"/api/v0.5/sessions/{session_id}/evidence", {"evidence_id": "E01"}),
+            ("post", f"/api/v0.5/sessions/{session_id}/hypotheses", {"hypothesis": "guess"}),
+            ("post", f"/api/v0.5/sessions/{session_id}/tutor", {"message": "help"}),
+            (
+                "post",
+                f"/api/v0.5/sessions/{session_id}/diagnosis",
+                {
+                    "contract_version": "0.4.0",
+                    "diagnosis_type": "object_pose_mismatch",
+                    "reasoning": "wrong owner",
+                    "cited_evidence_ids": ["E01"],
+                },
+            ),
+            ("get", f"/api/v0.5/sessions/{session_id}/report", None),
+        )
+        for method, url, payload in attempts:
+            response = await self.bob.request(
+                method, url, json=payload, headers=headers
+            )
+            self.assertEqual(404, response.status_code, (url, response.text))
+            self.assertEqual("session_not_found", response.json()["detail"])
+
+
+if __name__ == "__main__":
+    unittest.main()

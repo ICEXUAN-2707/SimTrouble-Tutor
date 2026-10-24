@@ -9,7 +9,37 @@
 <title>工业故障诊断实训</title>
 </head>
 <body>
-<div id="app">
+<main class="auth-shell" id="auth-shell">
+<section class="auth-brand">
+<span class="brand-mark large" aria-hidden="true"></span>
+<p class="eyebrow">SIMULATION · DIAGNOSTIC TRAINING</p>
+<h1>工业故障诊断<br/><span>智能实训平台</span></h1>
+<p>登录后进入 ST-001 工业机器人异常诊断训练。账号仅保存在当前本地部署中。</p>
+</section>
+<section class="auth-panel" aria-labelledby="auth-title">
+<div class="auth-tabs" role="tablist">
+<button aria-selected="true" id="login-tab" role="tab" type="button">登录</button>
+<button aria-selected="false" id="register-tab" role="tab" type="button">注册</button>
+</div>
+<h2 id="auth-title">欢迎回来</h2>
+<p class="auth-subtitle" id="auth-subtitle">登录后继续诊断实训</p>
+<div class="auth-error" hidden id="auth-error" role="alert"></div>
+<form class="auth-form" id="auth-form">
+<label id="display-name-field" hidden>昵称（选填）
+<input autocomplete="name" id="auth-display-name" maxlength="32" />
+</label>
+<label>账号
+<input autocomplete="username" id="auth-username" maxlength="32" required />
+</label>
+<label>密码
+<input autocomplete="current-password" id="auth-password" maxlength="128" minlength="8" required type="password" />
+</label>
+<button class="primary" id="auth-submit" type="submit">登录</button>
+</form>
+<p class="auth-footnote">会话 Cookie 只用于本地身份验证；密码不会明文保存。</p>
+</section>
+</main>
+<div hidden id="app">
 <header class="topbar">
 <div class="brand-block">
 <span aria-hidden="true" class="brand-mark"></span>
@@ -18,7 +48,7 @@
 <div class="case-heading">
 <strong id="case-title">正在加载案例</strong>
 </div>
-<div class="header-actions"><span id="training-status" role="status">正在连接</span><button aria-haspopup="dialog" id="assistant-open" type="button">✧ 智能助教</button></div></header>
+<div class="header-actions"><span id="training-status" role="status">正在连接</span><span class="signed-user" id="signed-user"></span><button id="logout-button" type="button">退出</button><button aria-haspopup="dialog" id="assistant-open" type="button">✧ 智能助教</button></div></header>
 <main class="workspace">
 <section aria-labelledby="viewport-title" class="viewport-shell">
 <div class="viewport-head">

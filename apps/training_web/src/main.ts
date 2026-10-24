@@ -48,6 +48,18 @@ interface SimulationSnapshot {
   objectAttached: boolean;
 }
 
+interface AuthUser {
+  user_id: string;
+  username: string;
+  display_name: string;
+}
+
+interface AuthSession {
+  user: AuthUser;
+  expires_at: number;
+  csrf_token: string;
+}
+
 declare global {
   interface Window {
     __SIMTROUBLE_INSPECT__?: () => SimulationSnapshot;
@@ -95,8 +107,22 @@ const diagnosisCitations = byId<HTMLDivElement>("diagnosis-citations");
 const diagnosisHint = byId<HTMLElement>("diagnosis-hint");
 const diagnosisSubmit = byId<HTMLButtonElement>("diagnosis-submit");
 const reportRetry = byId<HTMLButtonElement>("report-retry");
-
 const reportContent = byId<HTMLDivElement>("report-content");
+const appRoot = byId<HTMLDivElement>("app");
+const authShell = byId<HTMLElement>("auth-shell");
+const authForm = byId<HTMLFormElement>("auth-form");
+const authTitle = byId<HTMLElement>("auth-title");
+const authSubtitle = byId<HTMLElement>("auth-subtitle");
+const authError = byId<HTMLDivElement>("auth-error");
+const authUsername = byId<HTMLInputElement>("auth-username");
+const authPassword = byId<HTMLInputElement>("auth-password");
+const authDisplayName = byId<HTMLInputElement>("auth-display-name");
+const displayNameField = byId<HTMLElement>("display-name-field");
+const authSubmit = byId<HTMLButtonElement>("auth-submit");
+const loginTab = byId<HTMLButtonElement>("login-tab");
+const registerTab = byId<HTMLButtonElement>("register-tab");
+const signedUser = byId<HTMLElement>("signed-user");
+const logoutButton = byId<HTMLButtonElement>("logout-button");
 
 let config: SceneConfig;
 let scene: THREE.Scene;
@@ -126,6 +152,9 @@ let tutorBusy = false;
 let learningBusy = false;
 let diagnosisBusy = false;
 let reportLoaded: TrainingReport | null = null;
+let csrfToken: string | null = null;
+let authMode: "login" | "register" = "login";
+let applicationStarted = false;
 
 const deg = THREE.MathUtils.degToRad;
 const steel = new THREE.MeshStandardMaterial({ color: 0x76817d, roughness: 0.54, metalness: 0.68 });
@@ -390,9 +419,17 @@ class ApiError extends Error {
 }
 
 async function requestJson<T>(url: string, init: RequestInit): Promise<T> {
+  const headers = new Headers(init.headers);
+  headers.set("Accept", "application/json");
+  headers.set("Content-Type", "application/json");
+  const method = (init.method ?? "GET").toUpperCase();
+  if (csrfToken && method !== "GET" && method !== "HEAD") {
+    headers.set("X-CSRF-Token", csrfToken);
+  }
   const response = await fetch(url, {
     ...init,
-    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    credentials: "include",
+    headers,
   });
   if (!response.ok) {
     let detail = "request_failed";
@@ -565,7 +602,7 @@ async function fetchTrainingReport(): Promise<boolean> {
   setDiagnosisNotice("正在读取确定性训练报告…");
   try {
     const report = await requestJson<TrainingReport>(
-      `/api/v0.4/sessions/${encodeURIComponent(sessionId)}/report`,
+      `/api/v0.5/sessions/${encodeURIComponent(sessionId)}/report`,
       { method: "GET" },
     );
     if (report.session_id !== sessionId) {
@@ -579,7 +616,7 @@ async function fetchTrainingReport(): Promise<boolean> {
 
     try {
       const reviewed = await requestJson<SessionView>(
-        `/api/v0.4/sessions/${encodeURIComponent(sessionId)}`,
+        `/api/v0.5/sessions/${encodeURIComponent(sessionId)}`,
         { method: "GET" },
       );
       renderSession(reviewed);
@@ -752,7 +789,7 @@ function setTutorBusy(busy: boolean): void {
 
 async function initialiseLearningSession(): Promise<void> {
   try {
-    const session = await requestJson<SessionView>("/api/v0.4/sessions", {
+    const session = await requestJson<SessionView>("/api/v0.5/sessions", {
       method: "POST",
       body: JSON.stringify({ case_id: config.case_id }),
     });
@@ -790,7 +827,7 @@ function bindLearning(): void {
     setLearningNotice("正在获取证据…");
     try {
       const response = await requestJson<{ evidence: ReleasedEvidence; session: SessionView }>(
-        `/api/v0.4/sessions/${encodeURIComponent(sessionId)}/evidence`,
+        `/api/v0.5/sessions/${encodeURIComponent(sessionId)}/evidence`,
         { method: "POST", body: JSON.stringify({ evidence_id: evidenceId }) },
       );
       renderSession(response.session);
@@ -814,7 +851,7 @@ function bindLearning(): void {
     setLearningNotice("正在提交假设…");
     try {
       const response = await requestJson<SessionView>(
-        `/api/v0.4/sessions/${encodeURIComponent(sessionId)}/hypotheses`,
+        `/api/v0.5/sessions/${encodeURIComponent(sessionId)}/hypotheses`,
         { method: "POST", body: JSON.stringify({ hypothesis }) },
       );
       hypothesisDirty = false;
@@ -861,7 +898,7 @@ function bindDiagnosis(): void {
     setDiagnosisBusy(true);
     try {
       const submitted = await requestJson<SessionView>(
-        `/api/v0.4/sessions/${encodeURIComponent(sessionId)}/diagnosis`,
+        `/api/v0.5/sessions/${encodeURIComponent(sessionId)}/diagnosis`,
         { method: "POST", body: JSON.stringify(submission) },
       );
       renderSession(submitted);
@@ -897,7 +934,7 @@ function bindTutor(): void {
     tutorStatus.textContent = "正在思考";
     try {
       const response = await requestJson<TutorTurnResponse>(
-        `/api/v0.4/sessions/${encodeURIComponent(sessionId)}/tutor`,
+        `/api/v0.5/sessions/${encodeURIComponent(sessionId)}/tutor`,
         { method: "POST", body: JSON.stringify({ message }) },
       );
       appendTutorMessage(
@@ -998,5 +1035,106 @@ async function initialise(): Promise<void> {
   }
 }
 
-initialiseWorkspace();
-void initialise();
+function setAuthMode(mode: "login" | "register"): void {
+  authMode = mode;
+  const registering = mode === "register";
+  loginTab.setAttribute("aria-selected", String(!registering));
+  registerTab.setAttribute("aria-selected", String(registering));
+  displayNameField.hidden = !registering;
+  authTitle.textContent = registering ? "创建本地账号" : "欢迎回来";
+  authSubtitle.textContent = registering
+    ? "注册成功后将自动进入实训"
+    : "登录后继续诊断实训";
+  authSubmit.textContent = registering ? "注册并登录" : "登录";
+  authPassword.autocomplete = registering ? "new-password" : "current-password";
+  authError.hidden = true;
+}
+
+function authErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) return "身份服务暂时不可用，请稍后重试。";
+  const messages: Record<string, string> = {
+    invalid_registration: "请使用 3–32 位账号和至少 8 位密码。",
+    username_unavailable: "该账号已被注册，请更换账号或直接登录。",
+    invalid_credentials: "账号或密码不正确。",
+    login_rate_limited: "失败次数过多，请稍后再试。",
+    authentication_required: "登录已失效，请重新登录。",
+  };
+  return messages[error.detail] ?? "身份验证失败，请重试。";
+}
+
+async function enterApplication(auth: AuthSession): Promise<void> {
+  csrfToken = auth.csrf_token;
+  signedUser.textContent = auth.user.display_name;
+  authShell.hidden = true;
+  appRoot.hidden = false;
+  if (!applicationStarted) {
+    applicationStarted = true;
+    await initialise();
+  }
+}
+
+function bindAuthentication(): void {
+  loginTab.addEventListener("click", () => setAuthMode("login"));
+  registerTab.addEventListener("click", () => setAuthMode("register"));
+  authForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    authError.hidden = true;
+    authSubmit.disabled = true;
+    authSubmit.textContent = authMode === "register" ? "正在注册…" : "正在登录…";
+    const url = authMode === "register"
+      ? "/api/v0.5/auth/register"
+      : "/api/v0.5/auth/login";
+    const body = authMode === "register"
+      ? {
+        username: authUsername.value.trim(),
+        password: authPassword.value,
+        display_name: authDisplayName.value.trim() || null,
+      }
+      : { username: authUsername.value.trim(), password: authPassword.value };
+    try {
+      const auth = await requestJson<AuthSession>(url, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      authPassword.value = "";
+      await enterApplication(auth);
+    } catch (error) {
+      authError.textContent = authErrorMessage(error);
+      authError.hidden = false;
+    } finally {
+      authSubmit.disabled = false;
+      authSubmit.textContent = authMode === "register" ? "注册并登录" : "登录";
+    }
+  });
+
+  logoutButton.addEventListener("click", async () => {
+    if (!csrfToken) return;
+    logoutButton.disabled = true;
+    try {
+      await fetch("/api/v0.5/auth/logout", {
+        method: "POST",
+        credentials: "include",
+        headers: { "X-CSRF-Token": csrfToken },
+      });
+    } finally {
+      csrfToken = null;
+      window.location.reload();
+    }
+  });
+}
+
+async function bootstrap(): Promise<void> {
+  initialiseWorkspace();
+  bindAuthentication();
+  setAuthMode("login");
+  try {
+    const auth = await requestJson<AuthSession>("/api/v0.5/auth/me", { method: "GET" });
+    await enterApplication(auth);
+  } catch {
+    authShell.hidden = false;
+    appRoot.hidden = true;
+    authUsername.focus();
+  }
+}
+
+void bootstrap();
