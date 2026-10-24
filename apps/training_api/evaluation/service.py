@@ -25,6 +25,8 @@ class DiagnosisService:
         self,
         session_id: str,
         submission: DiagnosisSubmission,
+        *,
+        user_id: str | None = None,
     ) -> SessionView:
         completion = None
 
@@ -34,6 +36,7 @@ class DiagnosisService:
                 session_id,
                 submission,
                 self._builder.build,
+                user_id=user_id,
             )
             return completion.report
 
@@ -41,8 +44,13 @@ class DiagnosisService:
         assert completion is not None
         return completion.submitted_session
 
-    def report(self, session_id: str) -> TrainingReportV04:
-        self._sessions.get(session_id)
+    def report(
+        self,
+        session_id: str,
+        *,
+        user_id: str | None = None,
+    ) -> TrainingReportV04:
+        self._sessions.get(session_id, user_id=user_id)
         return self._reports.get(session_id)
 
 

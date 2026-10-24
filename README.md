@@ -29,7 +29,7 @@ Simulation          Mock Adapter / later Gazebo or Isaac Adapter
 - Skill Engine 使用可解释规则，LLM 不直接决定最终分数；
 - Core 不依赖具体仿真 SDK，真实仿真只能通过冻结的 Adapter 边界接入。
 
-当前实际实现包含 Phase 1–3 的契约与 Core、隔离的初版 Demo，以及 Product v0.4 的 CAD、Session、受约束 Tutor 与确定性诊断报告后端：
+当前实际实现包含 Phase 1–3 的契约与 Core、隔离的初版 Demo、Product v0.4 学习闭环，以及 stacked Product v0.5 本地身份候选：
 
 ```text
 contracts / data
@@ -47,6 +47,11 @@ Product v0.4
   ├─ apps/training_api/tutor（Policy / Provider Registry / Output Guard / Rule fallback）
   ├─ apps/training_api/evaluation（Evaluator / Skill Engine / Report Builder）
   └─ contracts/v0.4（Tutor / Diagnosis / Evaluator / Report）
+       ↑
+Product v0.5 candidate
+  ├─ apps/training_api/auth（SQLite Account / Auth Session / CSRF）
+  ├─ /api/v0.5（认证训练 Session 与所有权校验）
+  └─ apps/training_web（登录 / 注册 / 退出）
 ```
 
 当前架构与目标架构分别见 [Current Architecture](docs/architecture-current.md) 和 [Target Architecture](docs/architecture-target.md)。
@@ -64,6 +69,7 @@ Product v0.4
 - Product v0.4 T2C：DeepSeek Responses 与 OpenAI-compatible Provider Registry、配置容错和 Case-aware Output Guard 已实现。
 - Product v0.4 T3：一次性 Diagnosis、定性 Evaluator、确定性五维评分和 Report 后端已实现。
 - Product v0.4 T4A/T4B：CAD、Evidence、Hypothesis、Tutor、Diagnosis、Report 已整合到中文响应式工作台；发布门仍待真实 Provider smoke、依赖审计和 Phase 合入。
+- Product v0.5 T0–T3 候选：本地注册/登录、SQLite 认证会话、CSRF、登录限流、训练 Session 所有权和前端身份流程已实现；必须等待 v0.4 进入 `develop` 后才能执行 v0.5 Phase 合入。
 
 | 能力 | 当前事实 |
 |---|---|
@@ -76,7 +82,7 @@ Product v0.4
 | 五维 Skill 评分 | T3 已实现；ST-001 Safety 因无可观测机会标记为 `not_assessed` |
 | LLM Tutor | T2B/T2C 代码闭环已实现；支持 DeepSeek、Qwen、Kimi 和 SiliconFlow 配置，真实 Key smoke 需在发布前人工执行 |
 | Mock / 真实物理仿真 | 确定性 Three.js 动画已实现；物理仿真不在当前 MVP |
-| 数据库与账号体系 | 未实现 |
+| 数据库与账号体系 | v0.5 候选已实现本地账号与认证会话；训练 Session/Report 仍保持进程内 |
 
 当前权威基线与阶段规格：
 
@@ -110,6 +116,10 @@ SimTrouble_FreezePack_v0.2/   冻结的项目治理与技术边界
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe -B -m unittest discover -s tests -p 'test_*.py' -v
+Set-Location apps\training_web
+npm.cmd ci
+npm.cmd run build
+npm.cmd audit
 ```
 
 ## 运行初版 Demo
@@ -120,7 +130,7 @@ python -m venv .venv
 
 默认仅监听 `http://127.0.0.1:8000`。该 Demo 使用进程内匿名会话、确定性规则 Tutor 和 ST-001 专用判定；它不会推进正式诊断阶段，也不提供五维评分、在线 LLM、物理仿真或持久化。
 
-## 运行 Product v0.4
+## 运行 Product v0.5 身份候选
 
 在仓库根目录启动 API：
 
@@ -136,7 +146,9 @@ npm.cmd ci
 npm.cmd run dev
 ~~~
 
-打开 `http://127.0.0.1:5174`。不配置在线 Provider 时，Tutor API 会使用确定性规则回退。真实 Provider 调用仅从后端环境变量读取密钥。DeepSeek 示例：
+打开 `http://127.0.0.1:5174`，先注册本地账号，再进入训练工作台。默认认证数据库为仓库根目录下被 Git 忽略的 `var/auth.db`；可用 `SIMTROUBLE_AUTH_DB_PATH` 指向其他位置。HTTPS 部署必须设置 `SIMTROUBLE_COOKIE_SECURE=true`。
+
+不配置在线 Provider 时，Tutor API 会使用确定性规则回退。真实 Provider 调用仅从后端环境变量读取密钥。DeepSeek 示例：
 
 ~~~powershell
 $env:SIMTROUBLE_LLM_ENABLED = "true"

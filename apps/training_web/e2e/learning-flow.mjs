@@ -38,7 +38,7 @@ export async function verifyLearningFlow(page) {
   assert.equal(await page.locator("#hypothesis-history li").count(), 2);
   assert.equal(await page.locator("#session-stage").textContent(), "调查中");
 
-  await page.route("**/api/v0.4/sessions/*/evidence", async (route) => {
+  await page.route("**/api/v0.5/sessions/*/evidence", async (route) => {
     const body = route.request().postDataJSON();
     if (body.evidence_id !== "E03") return route.continue();
     await route.fulfill({
@@ -55,5 +55,5 @@ export async function verifyLearningFlow(page) {
   assert.equal(await page.locator("#session-code").getAttribute("title"), originalSessionId);
   await page.locator('[data-step="evidence"]').click();
   assert.equal(await page.locator("[data-evidence-id='E03']").isEnabled(), true);
-  await page.unroute("**/api/v0.4/sessions/*/evidence");
+  await page.unroute("**/api/v0.5/sessions/*/evidence");
 }

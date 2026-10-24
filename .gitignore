@@ -11,6 +11,10 @@ coverage.xml
 htmlcov/
 node_modules/
 dist/
+/var/
+*.db
+*.db-shm
+*.db-wal
 /.tmp/
 /zjh/
 /学生卡.jpg

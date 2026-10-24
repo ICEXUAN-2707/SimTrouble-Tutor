@@ -59,17 +59,27 @@ class TutorService:
         self._session_locks: dict[str, asyncio.Lock] = {}
         self._session_locks_guard = RLock()
 
-    async def ask(self, session_id: str, learner_message: str) -> TutorTurnResponse:
-        self._sessions.get(session_id)
+    async def ask(
+        self,
+        session_id: str,
+        learner_message: str,
+        *,
+        user_id: str | None = None,
+    ) -> TutorTurnResponse:
+        self._sessions.get(session_id, user_id=user_id)
         async with self._lock_for(session_id):
-            return await self._ask_serialized(session_id, learner_message)
+            return await self._ask_serialized(
+                session_id, learner_message, user_id=user_id
+            )
 
     async def _ask_serialized(
         self,
         session_id: str,
         learner_message: str,
+        *,
+        user_id: str | None,
     ) -> TutorTurnResponse:
-        session = self._sessions.get(session_id)
+        session = self._sessions.get(session_id, user_id=user_id)
         history = self._conversations.history(session_id)
         request = self._projector.project(session, history, learner_message)
         decision = self._policy.decide(request)
@@ -80,6 +90,7 @@ class TutorService:
             suggested_action=(
                 decision.suggested_action.value if decision.suggested_action else None
             ),
+            user_id=user_id,
         )
         started = self._clock()
 
@@ -109,7 +120,10 @@ class TutorService:
         latency_ms = max(0, round((self._clock() - started) * 1_000))
         if mode is TutorMode.LLM:
             self._sessions.record_tutor_delivered(
-                session_id, latency_ms=latency_ms, retry_count=retry_count
+                session_id,
+                latency_ms=latency_ms,
+                retry_count=retry_count,
+                user_id=user_id,
             )
         else:
             assert fallback_reason is not None
@@ -118,6 +132,7 @@ class TutorService:
                 latency_ms=latency_ms,
                 retry_count=retry_count,
                 reason=fallback_reason,
+                user_id=user_id,
             )
         self.metrics.record(TutorMetricEvent(
             session_id=session_id,
@@ -129,7 +144,7 @@ class TutorService:
         self._conversations.append_turn(session_id, learner_message, response)
         return TutorTurnResponse(
             tutor=response,
-            session=self._sessions.get(session_id),
+            session=self._sessions.get(session_id, user_id=user_id),
             tutor_mode=mode,
         )
 

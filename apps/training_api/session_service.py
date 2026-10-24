@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hmac
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
@@ -15,7 +16,7 @@ from core.models.contracts import DiagnosticStage
 from .learning_models import DiagnosisSubmission, TrainingReportV04
 from .session_models import EvidenceResponse, SessionView
 from .session_projector import SessionProjector
-from .session_repository import SessionRepository
+from .session_repository import SessionNotFoundError, SessionRepository
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -64,34 +65,42 @@ class SessionService:
         self._evidence = evidence_manager or EvidenceManager()
         self._projector = projector or SessionProjector()
 
-    def create(self, case_id: str) -> SessionView:
+    def create(self, case_id: str, *, user_id: str | None = None) -> SessionView:
         try:
             case = self._cases[case_id]
         except KeyError as exc:
             raise CaseNotFoundError(case_id) from exc
 
         aggregate = CaseSession(
-            user_id=f"anonymous:{uuid4()}",
+            user_id=user_id or f"anonymous:{uuid4()}",
             case=case,
         )
         aggregate.transition_to(DiagnosticStage.OBSERVE)
         self._repository.add(aggregate)
         return self._projector.project(aggregate)
 
-    def get(self, session_id: str) -> SessionView:
-        return self._repository.inspect(session_id, self._projector.project)
+    def get(self, session_id: str, *, user_id: str | None = None) -> SessionView:
+        def reader(aggregate: CaseSession) -> SessionView:
+            self._guard_owner(aggregate, user_id)
+            return self._projector.project(aggregate)
+
+        return self._repository.inspect(session_id, reader)
 
     def request_evidence(
         self,
         session_id: str,
         evidence_id: str,
+        *,
+        user_id: str | None = None,
     ) -> EvidenceResponse:
-        self._repository.mutate(
-            session_id,
-            lambda aggregate: self._guard_evidence_exists(aggregate, evidence_id),
-        )
+        def validate_request(aggregate: CaseSession) -> None:
+            self._guard_owner(aggregate, user_id)
+            self._guard_evidence_exists(aggregate, evidence_id)
+
+        self._repository.mutate(session_id, validate_request)
 
         def command(aggregate: CaseSession) -> EvidenceResponse:
+            self._guard_owner(aggregate, user_id)
             stage = aggregate.session.current_stage
             if stage is DiagnosticStage.OBSERVE:
                 aggregate.transition_to(DiagnosticStage.INVESTIGATE)
@@ -114,12 +123,19 @@ class SessionService:
 
         return self._repository.mutate_atomically(session_id, command)
 
-    def submit_hypothesis(self, session_id: str, hypothesis: str) -> SessionView:
+    def submit_hypothesis(
+        self,
+        session_id: str,
+        hypothesis: str,
+        *,
+        user_id: str | None = None,
+    ) -> SessionView:
         normalized = hypothesis.strip()
         if not normalized:
             raise ValueError("hypothesis must not be empty")
 
         def command(aggregate: CaseSession) -> SessionView:
+            self._guard_owner(aggregate, user_id)
             stage = aggregate.session.current_stage
             if stage is DiagnosticStage.INVESTIGATE:
                 aggregate.transition_to(DiagnosticStage.HYPOTHESIZE)
@@ -145,15 +161,17 @@ class SessionService:
         policy_rule_id: str,
         hint_level: int,
         suggested_action: str | None,
+        user_id: str | None = None,
     ) -> None:
-        self._repository.mutate(
-            session_id,
-            lambda aggregate: aggregate.record_tutor_requested(
+        def command(aggregate: CaseSession) -> None:
+            self._guard_owner(aggregate, user_id)
+            aggregate.record_tutor_requested(
                 policy_rule_id=policy_rule_id,
                 hint_level=hint_level,
                 suggested_action=suggested_action,
-            ),
-        )
+            )
+
+        self._repository.mutate(session_id, command)
 
     def record_tutor_delivered(
         self,
@@ -161,14 +179,16 @@ class SessionService:
         *,
         latency_ms: int,
         retry_count: int,
+        user_id: str | None = None,
     ) -> None:
-        self._repository.mutate(
-            session_id,
-            lambda aggregate: aggregate.record_tutor_delivered(
+        def command(aggregate: CaseSession) -> None:
+            self._guard_owner(aggregate, user_id)
+            aggregate.record_tutor_delivered(
                 latency_ms=latency_ms,
                 retry_count=retry_count,
-            ),
-        )
+            )
+
+        self._repository.mutate(session_id, command)
 
     def record_tutor_fallback(
         self,
@@ -177,23 +197,28 @@ class SessionService:
         latency_ms: int,
         retry_count: int,
         reason: str,
+        user_id: str | None = None,
     ) -> None:
-        self._repository.mutate(
-            session_id,
-            lambda aggregate: aggregate.record_tutor_fallback(
+        def command(aggregate: CaseSession) -> None:
+            self._guard_owner(aggregate, user_id)
+            aggregate.record_tutor_fallback(
                 latency_ms=latency_ms,
                 retry_count=retry_count,
                 reason=reason,
-            ),
-        )
+            )
+
+        self._repository.mutate(session_id, command)
 
     def complete_diagnosis(
         self,
         session_id: str,
         submission: DiagnosisSubmission,
         build_report: Callable[[DiagnosisEvaluationContext], TrainingReportV04],
+        *,
+        user_id: str | None = None,
     ) -> DiagnosisCompletion:
         def command(aggregate: CaseSession) -> DiagnosisCompletion:
+            self._guard_owner(aggregate, user_id)
             if aggregate.session.current_stage is not DiagnosticStage.UPDATE:
                 raise SessionStageConflictError(
                     "diagnosis is allowed only after hypothesis update"
@@ -230,6 +255,16 @@ class SessionService:
             )
 
         return self._repository.mutate_atomically(session_id, command)
+
+    @staticmethod
+    def _guard_owner(aggregate: CaseSession, user_id: str | None) -> None:
+        owner = aggregate.session.user_id
+        if user_id is None and owner.startswith("anonymous:"):
+            return
+        if user_id is not None and hmac.compare_digest(owner, user_id):
+            return
+        # Wrong-owner and absent Sessions intentionally share one public error.
+        raise SessionNotFoundError(aggregate.session.session_id)
 
     def _guard_evidence_exists(
         self,
