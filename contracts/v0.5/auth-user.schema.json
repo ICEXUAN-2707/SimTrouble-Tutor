@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://simtrouble.local/contracts/v0.5/auth-user.schema.json",
+  "title": "AuthUserV05",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["user_id", "username", "display_name"],
+  "properties": {
+    "user_id": {"type": "string", "minLength": 1},
+    "username": {"type": "string", "minLength": 3, "maxLength": 32},
+    "display_name": {"type": "string", "minLength": 1, "maxLength": 32}
+  }
+}
+
