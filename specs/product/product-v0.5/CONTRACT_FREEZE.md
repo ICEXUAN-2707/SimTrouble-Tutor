@@ -10,8 +10,8 @@
 | Field | Type | Rule |
 |---|---|---|
 | `user_id` | string | opaque, server-generated, non-empty |
-| `username` | string | 3-32 allowed characters |
-| `display_name` | string | 1-32 characters |
+| `username` | string | 3-32 canonical username characters |
+| `display_name` | string | 1-32 characters, no surrounding whitespace or control characters |
 
 `AuthSessionV05`:
 
@@ -41,29 +41,70 @@ Scene configuration remains public at the Product v0.4 path. Product v0.4
 anonymous Session routes remain for compatibility and can operate only on
 Sessions whose authoritative User ID begins with `anonymous:`.
 
-## Request shapes
+## Request contracts
 
-Registration:
+Registration and login bodies are frozen by
+`auth-register-request.schema.json` and `auth-login-request.schema.json`.
+Unknown fields are rejected.
+
+Username rules are identical for registration, login and public identity:
+
+- 3-32 Unicode code points;
+- ASCII letters, digits, `_`, `-`, and CJK Unified Ideographs in
+  `U+4E00-U+9FFF` only;
+- no whitespace trimming or other Unicode normalization is performed;
+- the spelling supplied at registration is stored and returned;
+- uniqueness and login matching use an identity key formed by lowercasing ASCII
+  letters; therefore `Learner01` and `learner01` identify the same account.
+
+Registration passwords contain 15-128 Unicode code points. Login accepts
+1-128 code points so a future password-policy change cannot prevent an existing
+credential from being verified. Passwords are compared exactly: the server
+does not trim, case-fold, truncate or Unicode-normalize them. No character-class
+composition rule is imposed.
+
+`display_name` is optional during registration. When omitted, it defaults to
+the registered username. When supplied, it contains 1-32 Unicode code points
+and has no leading/trailing whitespace or control characters. JSON `null`, an
+empty string and a whitespace-only value are invalid.
+
+### Registration
 
 ```json
 {
   "username": "learner01",
-  "password": "example-password",
+  "password": "example-password-long",
   "display_name": "Learner"
 }
 ```
 
-Login:
+### Login
 
 ```json
 {
   "username": "learner01",
-  "password": "example-password"
+  "password": "example-password-long"
 }
 ```
 
-Unknown fields are rejected. Passwords are accepted only in these two request
-bodies and are excluded from validation-error echoes and logs.
+Passwords are accepted only in these two request bodies and are excluded from
+validation-error echoes and logs.
+
+## Failed-login state bound
+
+- Five failures for one account identity key within five minutes lock that key
+  for 15 minutes.
+- Failure rows become stale once both their observation window and lock have
+  expired, and stale rows are deleted during subsequent login-failure writes.
+- A registered account retains at most one failure row and an active registered
+  account lock is never evicted to make room for unknown names.
+- Failure rows for unknown usernames have a hard capacity of 4096. After stale
+  cleanup, the oldest unknown-name row is evicted before that capacity can be
+  exceeded.
+- Cleanup, capacity enforcement and failure recording occur in one SQLite
+  transaction. The invariant is
+  `login_failures rows <= registered users + 4096`.
+- Public error bodies remain identical whether or not the username exists.
 
 ## Stable errors
 
@@ -90,5 +131,5 @@ Existing Product v0.4 domain errors retain their current status and detail.
 ## Change control
 
 Changes to public fields, paths, cookie names, ownership rules or stable error
-details require a Product v0.5 contract change proposal and parity tests.
-
+details, request schemas, identity-key rules or failed-login bounds require a
+Product v0.5 contract change proposal and parity tests.
