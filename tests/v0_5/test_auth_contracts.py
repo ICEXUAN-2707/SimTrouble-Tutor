@@ -37,6 +37,9 @@ class AuthContractTests(unittest.TestCase):
         self.assertFalse(validator.is_valid({**value, "password": "secret"}))
         for username in ("", "   ", "ab", "a" * 33, "bad.name", " user"):
             self.assertFalse(validator.is_valid({**value, "username": username}))
+        for display_name in ("A\u0080B", "A\u0085B", "A\u009fB"):
+            with self.subTest(display_name=display_name):
+                self.assertFalse(validator.is_valid({**value, "display_name": display_name}))
 
     def test_registration_request_boundaries_and_defaults(self) -> None:
         validator = Draft202012Validator(self.load("auth-register-request.schema.json"))
@@ -58,6 +61,9 @@ class AuthContractTests(unittest.TestCase):
             {**valid, "display_name": "   "},
             {**valid, "display_name": " Learner"},
             {**valid, "display_name": "Learner\n"},
+            {**valid, "display_name": "A\u0080B"},
+            {**valid, "display_name": "A\u0085B"},
+            {**valid, "display_name": "A\u009fB"},
             {**valid, "display_name": None},
             {**valid, "unexpected": True},
             {"username": "learner01"},

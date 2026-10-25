@@ -47,7 +47,7 @@ Status: implementation complete.
 Status: local gates complete; GitHub review/CI and base-Phase ordering remain.
 
 - Contract/model parity tests.
-- Auth repository, expiry, rate-limit and CSRF unit tests.
+- Auth repository, expiry, rate-limit enumeration-resistance and CSRF tests.
 - Cross-user ownership and regression API tests.
 - Desktop/mobile browser flow.
 - Full Product v0.4 regression, production build and dependency audit.
