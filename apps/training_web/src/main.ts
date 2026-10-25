@@ -1047,13 +1047,14 @@ function setAuthMode(mode: "login" | "register"): void {
     : "登录后继续诊断实训";
   authSubmit.textContent = registering ? "注册并登录" : "登录";
   authPassword.autocomplete = registering ? "new-password" : "current-password";
+  authPassword.minLength = registering ? 15 : 1;
   authError.hidden = true;
 }
 
 function authErrorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) return "身份服务暂时不可用，请稍后重试。";
   const messages: Record<string, string> = {
-    invalid_registration: "请使用 3–32 位账号和至少 8 位密码。",
+    invalid_registration: "请使用有效的 3–32 位账号和至少 15 位密码。",
     username_unavailable: "该账号已被注册，请更换账号或直接登录。",
     invalid_credentials: "账号或密码不正确。",
     login_rate_limited: "失败次数过多，请稍后再试。",
@@ -1086,11 +1087,13 @@ function bindAuthentication(): void {
       : "/api/v0.5/auth/login";
     const body = authMode === "register"
       ? {
-        username: authUsername.value.trim(),
+        username: authUsername.value,
         password: authPassword.value,
-        display_name: authDisplayName.value.trim() || null,
+        ...(authDisplayName.value === ""
+          ? {}
+          : { display_name: authDisplayName.value }),
       }
-      : { username: authUsername.value.trim(), password: authPassword.value };
+      : { username: authUsername.value, password: authPassword.value };
     try {
       const auth = await requestJson<AuthSession>(url, {
         method: "POST",

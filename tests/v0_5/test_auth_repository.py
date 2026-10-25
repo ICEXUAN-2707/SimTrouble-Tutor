@@ -5,10 +5,12 @@ import tempfile
 import unittest
 from contextlib import closing
 from pathlib import Path
+from unittest.mock import patch
 
 from apps.training_api.auth.repository import (
     AuthenticationStore,
     LoginRateLimitedError,
+    UNKNOWN_LOGIN_FAILURE_CAP,
     UsernameUnavailableError,
     hash_password,
     verify_password,
@@ -57,7 +59,7 @@ class AuthenticationStoreTests(unittest.TestCase):
                 for value in row
             )
             version = connection.execute("PRAGMA user_version").fetchone()[0]
-        self.assertEqual(1, version)
+        self.assertEqual(2, version)
         self.assertNotIn("correct-horse", values)
         self.assertNotIn(issued.token, values)
         self.assertNotIn(issued.csrf_token, values)
@@ -76,6 +78,39 @@ class AuthenticationStoreTests(unittest.TestCase):
                 password="another-password",
                 display_name=None,
             )
+
+    def test_schema_v1_failure_rows_are_migrated_and_classified(self) -> None:
+        legacy_path = self.store.database_path.with_name("legacy.db")
+        with closing(sqlite3.connect(legacy_path)) as connection:
+            connection.executescript(
+                """
+                CREATE TABLE users (username_key TEXT NOT NULL UNIQUE);
+                INSERT INTO users(username_key) VALUES ('known01');
+                CREATE TABLE login_failures (
+                    account_key TEXT PRIMARY KEY,
+                    failed_count INTEGER NOT NULL,
+                    window_started_at INTEGER NOT NULL,
+                    locked_until INTEGER NOT NULL
+                );
+                INSERT INTO login_failures VALUES ('known01', 2, 100, 0);
+                INSERT INTO login_failures VALUES ('missing01', 1, 200, 0);
+                PRAGMA user_version = 1;
+                """
+            )
+
+        legacy = AuthenticationStore(legacy_path, clock=lambda: self.now)
+        legacy.initialize()
+        with closing(sqlite3.connect(legacy_path)) as connection:
+            version = connection.execute("PRAGMA user_version").fetchone()[0]
+            rows = connection.execute(
+                "SELECT account_key, is_known, updated_at FROM login_failures "
+                "ORDER BY account_key"
+            ).fetchall()
+        self.assertEqual(2, version)
+        self.assertEqual(
+            [("known01", 1, 100), ("missing01", 0, 200)],
+            rows,
+        )
 
     def test_expired_and_revoked_sessions_fail_closed(self) -> None:
         user = self.store.create_user(
@@ -96,6 +131,110 @@ class AuthenticationStoreTests(unittest.TestCase):
             self.assertIsNone(self.store.authenticate("missing-user", "wrong-password"))
         with self.assertRaises(LoginRateLimitedError):
             self.store.authenticate("missing-user", "wrong-password")
+
+        restarted = AuthenticationStore(self.store.database_path, clock=lambda: self.now)
+        restarted.initialize()
+        with self.assertRaises(LoginRateLimitedError):
+            restarted.authenticate("missing-user", "wrong-password")
+
+    def test_stale_unknown_login_failure_is_removed_on_next_failure(self) -> None:
+        with patch(
+            "apps.training_api.auth.repository.verify_password", return_value=False
+        ):
+            self.assertIsNone(self.store.authenticate("missing-old", "wrong"))
+            self.now += 5 * 60
+            self.assertIsNone(self.store.authenticate("missing-new", "wrong"))
+
+        with closing(sqlite3.connect(self.store.database_path)) as connection:
+            keys = {
+                row[0] for row in connection.execute(
+                    "SELECT account_key FROM login_failures"
+                )
+            }
+        self.assertNotIn("missing-old", keys)
+        self.assertIn("missing-new", keys)
+
+    def test_unknown_login_failure_rows_have_a_hard_capacity(self) -> None:
+        self.assertEqual(4096, UNKNOWN_LOGIN_FAILURE_CAP)
+        with (
+            patch(
+                "apps.training_api.auth.repository.UNKNOWN_LOGIN_FAILURE_CAP", 3
+            ),
+            patch(
+                "apps.training_api.auth.repository.verify_password", return_value=False
+            ),
+        ):
+            for index in range(7):
+                self.assertIsNone(
+                    self.store.authenticate(f"missing-{index}", "wrong")
+                )
+
+        with closing(sqlite3.connect(self.store.database_path)) as connection:
+            count = connection.execute(
+                "SELECT COUNT(*) FROM login_failures WHERE is_known = 0"
+            ).fetchone()[0]
+        self.assertEqual(3, count)
+
+        with closing(sqlite3.connect(self.store.database_path)) as connection:
+            connection.executemany(
+                "INSERT OR REPLACE INTO login_failures "
+                "(account_key, failed_count, window_started_at, locked_until, is_known, updated_at) "
+                "VALUES (?, 1, ?, 0, 0, ?)",
+                [(f"legacy-{index}", self.now, index) for index in range(6)],
+            )
+            connection.commit()
+        with (
+            patch(
+                "apps.training_api.auth.repository.UNKNOWN_LOGIN_FAILURE_CAP", 3
+            ),
+            patch(
+                "apps.training_api.auth.repository.verify_password", return_value=False
+            ),
+        ):
+            self.assertIsNone(self.store.authenticate("trigger-key", "wrong"))
+        with closing(sqlite3.connect(self.store.database_path)) as connection:
+            count = connection.execute(
+                "SELECT COUNT(*) FROM login_failures WHERE is_known = 0"
+            ).fetchone()[0]
+        self.assertEqual(3, count)
+
+    def test_unknown_name_churn_never_evicts_registered_account_lock(self) -> None:
+        self.store.create_user(
+            username="Protected01",
+            password="correct-horse-battery",
+            display_name=None,
+        )
+        with (
+            patch(
+                "apps.training_api.auth.repository.UNKNOWN_LOGIN_FAILURE_CAP", 2
+            ),
+            patch(
+                "apps.training_api.auth.repository.verify_password", return_value=False
+            ),
+        ):
+            for _ in range(5):
+                self.assertIsNone(self.store.authenticate("protected01", "wrong"))
+            for index in range(5):
+                self.assertIsNone(
+                    self.store.authenticate(f"unknown-{index}", "wrong")
+                )
+
+        with closing(sqlite3.connect(self.store.database_path)) as connection:
+            protected = connection.execute(
+                "SELECT is_known, locked_until FROM login_failures "
+                "WHERE account_key = 'protected01'"
+            ).fetchone()
+            unknown_count = connection.execute(
+                "SELECT COUNT(*) FROM login_failures WHERE is_known = 0"
+            ).fetchone()[0]
+            total_count = connection.execute(
+                "SELECT COUNT(*) FROM login_failures"
+            ).fetchone()[0]
+        self.assertEqual((1, self.now + 15 * 60), protected)
+        self.assertEqual(2, unknown_count)
+        self.assertLessEqual(total_count, 1 + 2)
+        with self.assertRaises(LoginRateLimitedError):
+            self.store.authenticate("Protected01", "correct-horse-battery")
 
 
 if __name__ == "__main__":

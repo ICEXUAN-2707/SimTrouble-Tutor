@@ -6,7 +6,7 @@ function uniqueUsername(prefix = "e2e") {
 
 export async function registerAndEnter(page, baseUrl, prefix = "e2e") {
   const username = uniqueUsername(prefix);
-  const password = "correct-horse";
+  const password = "correct-horse-battery";
   await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
   await page.locator("#register-tab").click();
   await page.locator("#auth-display-name").fill("测试学员");

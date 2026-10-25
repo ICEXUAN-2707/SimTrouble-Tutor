@@ -12,6 +12,9 @@ from apps.training_api.session_service import SessionService
 from apps.training_api.tutor.service import TutorService
 
 
+TEST_PASSWORD = "correct-horse-battery"
+
+
 class AuthenticationApiTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self) -> None:
         directory = tempfile.TemporaryDirectory()
@@ -36,7 +39,7 @@ class AuthenticationApiTests(unittest.IsolatedAsyncioTestCase):
             "/api/v0.5/auth/register",
             json={
                 "username": username,
-                "password": "correct-horse",
+                "password": TEST_PASSWORD,
                 "display_name": username.title(),
             },
         )
@@ -82,6 +85,58 @@ class AuthenticationApiTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(401, invalid_login.status_code)
         self.assertEqual("invalid_credentials", invalid_login.json()["detail"])
         self.assertNotIn("secret-value", invalid_login.text)
+
+    async def test_auth_requests_enforce_frozen_input_contract(self) -> None:
+        invalid_registrations = (
+            {"username": " user01", "password": TEST_PASSWORD},
+            {"username": "user.01", "password": TEST_PASSWORD},
+            {"username": "user01", "password": "x" * 14},
+            {"username": "user01", "password": TEST_PASSWORD, "display_name": None},
+            {"username": "user01", "password": TEST_PASSWORD, "display_name": "   "},
+            {"username": "user01", "password": TEST_PASSWORD, "unknown": True},
+        )
+        for payload in invalid_registrations:
+            with self.subTest(payload=payload):
+                response = await self.alice.post(
+                    "/api/v0.5/auth/register", json=payload
+                )
+                self.assertEqual(400, response.status_code, response.text)
+                self.assertEqual("invalid_registration", response.json()["detail"])
+
+        invalid_logins = (
+            {"username": " user01", "password": "x"},
+            {"username": "user.01", "password": "x"},
+            {"username": "user01", "password": ""},
+            {"username": "user01", "password": "x", "unknown": True},
+        )
+        for payload in invalid_logins:
+            with self.subTest(payload=payload):
+                response = await self.alice.post(
+                    "/api/v0.5/auth/login", json=payload
+                )
+                self.assertEqual(401, response.status_code, response.text)
+                self.assertEqual("invalid_credentials", response.json()["detail"])
+
+    async def test_display_name_default_case_matching_and_exact_password(self) -> None:
+        exact_password = " exact password "
+        registered = await self.alice.post(
+            "/api/v0.5/auth/register",
+            json={"username": "CaseUser", "password": exact_password},
+        )
+        self.assertEqual(201, registered.status_code, registered.text)
+        self.assertEqual("CaseUser", registered.json()["user"]["display_name"])
+
+        wrong_password = await self.bob.post(
+            "/api/v0.5/auth/login",
+            json={"username": "caseuser", "password": exact_password.strip()},
+        )
+        self.assertEqual(401, wrong_password.status_code)
+        logged_in = await self.bob.post(
+            "/api/v0.5/auth/login",
+            json={"username": "caseuser", "password": exact_password},
+        )
+        self.assertEqual(200, logged_in.status_code, logged_in.text)
+        self.assertEqual("CaseUser", logged_in.json()["user"]["username"])
 
     async def test_authenticated_training_session_enforces_owner_and_csrf(self) -> None:
         await self.register(self.alice, "alice01")

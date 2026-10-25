@@ -29,10 +29,10 @@
 <input autocomplete="name" id="auth-display-name" maxlength="32" />
 </label>
 <label>账号
-<input autocomplete="username" id="auth-username" maxlength="32" required />
+<input autocomplete="username" id="auth-username" maxlength="32" minlength="3" pattern="[A-Za-z0-9_\u4e00-\u9fff-]{3,32}" required />
 </label>
 <label>密码
-<input autocomplete="current-password" id="auth-password" maxlength="128" minlength="8" required type="password" />
+<input autocomplete="current-password" id="auth-password" maxlength="128" minlength="1" required type="password" />
 </label>
 <button class="primary" id="auth-submit" type="submit">登录</button>
 </form>

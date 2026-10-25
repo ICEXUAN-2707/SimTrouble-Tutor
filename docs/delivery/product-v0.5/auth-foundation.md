@@ -9,7 +9,10 @@
 - versioned SQLite account and authentication-session schema;
 - salted PBKDF2-SHA256 password verifiers and transparent iteration upgrade;
 - random server-issued authentication and CSRF tokens with digest-only storage;
-- persisted failed-login window and lock;
+- persisted failed-login window and lock with stale-row cleanup and a 4096-row
+  cap for unknown usernames;
+- strict request validation for canonical usernames, exact 15-128-character
+  registration passwords and optional non-blank display names;
 - registration, login, identity restore and logout APIs;
 - `HttpOnly` authentication cookie, CSRF double proof and configurable Secure flag;
 - authenticated `/api/v0.5/sessions` learning routes;
@@ -27,7 +30,7 @@ does not claim durable learning history or cloud sync.
 
 ## Verification
 
-- 142 Python tests: pass;
+- 150 Python tests: pass;
 - Product v0.5 contract/repository/API tests: pass;
 - TypeScript type check and production build: pass;
 - browser E2E including registration, logout, login, desktop/mobile learning,

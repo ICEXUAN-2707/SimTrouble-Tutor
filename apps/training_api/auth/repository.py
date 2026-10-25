@@ -17,12 +17,17 @@ from uuid import uuid4
 from .models import AuthUserV05
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 PASSWORD_ITERATIONS = 600_000
 SESSION_TTL_SECONDS = 7 * 24 * 60 * 60
 LOGIN_WINDOW_SECONDS = 5 * 60
 LOGIN_FAILURE_LIMIT = 5
 LOGIN_LOCK_SECONDS = 15 * 60
+UNKNOWN_LOGIN_FAILURE_CAP = 4096
+
+_ASCII_LOWER_TRANSLATION = str.maketrans(
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"
+)
 
 
 class UsernameUnavailableError(ValueError):
@@ -57,7 +62,7 @@ def _digest(value: str) -> str:
 
 
 def _username_key(value: str) -> str:
-    return value.strip().casefold()
+    return value.translate(_ASCII_LOWER_TRANSLATION)
 
 
 def hash_password(
@@ -164,9 +169,46 @@ class AuthenticationStore:
                         account_key TEXT PRIMARY KEY,
                         failed_count INTEGER NOT NULL,
                         window_started_at INTEGER NOT NULL,
-                        locked_until INTEGER NOT NULL
+                        locked_until INTEGER NOT NULL,
+                        is_known INTEGER NOT NULL CHECK (is_known IN (0, 1)),
+                        updated_at INTEGER NOT NULL
                     );
-                    PRAGMA user_version = 1;
+                    CREATE INDEX login_failures_stale_idx
+                        ON login_failures(window_started_at, locked_until);
+                    CREATE INDEX login_failures_unknown_eviction_idx
+                        ON login_failures(is_known, updated_at, account_key);
+                    PRAGMA user_version = 2;
+                    """
+                )
+            elif current == 1:
+                columns = {
+                    str(row["name"])
+                    for row in connection.execute("PRAGMA table_info(login_failures)")
+                }
+                if "is_known" not in columns:
+                    connection.execute(
+                        "ALTER TABLE login_failures "
+                        "ADD COLUMN is_known INTEGER NOT NULL DEFAULT 0 "
+                        "CHECK (is_known IN (0, 1))"
+                    )
+                if "updated_at" not in columns:
+                    connection.execute(
+                        "ALTER TABLE login_failures "
+                        "ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0"
+                    )
+                connection.executescript(
+                    """
+                    UPDATE login_failures
+                    SET is_known = CASE WHEN EXISTS (
+                            SELECT 1 FROM users
+                            WHERE users.username_key = login_failures.account_key
+                        ) THEN 1 ELSE 0 END,
+                        updated_at = window_started_at;
+                    CREATE INDEX IF NOT EXISTS login_failures_stale_idx
+                        ON login_failures(window_started_at, locked_until);
+                    CREATE INDEX IF NOT EXISTS login_failures_unknown_eviction_idx
+                        ON login_failures(is_known, updated_at, account_key);
+                    PRAGMA user_version = 2;
                     """
                 )
 
@@ -221,7 +263,12 @@ class AuthenticationStore:
             stored = row["password_hash"] if row is not None else _DUMMY_PASSWORD_HASH
             valid = verify_password(password, stored)
             if row is None or not valid:
-                self._record_failure(connection, account_key, failure, now)
+                self._record_failure(
+                    connection,
+                    account_key,
+                    now,
+                    is_known=row is not None,
+                )
                 return None
 
             connection.execute(
@@ -242,9 +289,38 @@ class AuthenticationStore:
         self,
         connection: sqlite3.Connection,
         account_key: str,
-        failure: sqlite3.Row | None,
         now: int,
+        *,
+        is_known: bool,
     ) -> None:
+        connection.execute(
+            "DELETE FROM login_failures "
+            "WHERE window_started_at + ? <= ? AND locked_until <= ?",
+            (LOGIN_WINDOW_SECONDS, now, now),
+        )
+        failure = connection.execute(
+            "SELECT failed_count, window_started_at, locked_until "
+            "FROM login_failures WHERE account_key = ?",
+            (account_key,),
+        ).fetchone()
+
+        unknown_count = int(
+            connection.execute(
+                "SELECT COUNT(*) FROM login_failures WHERE is_known = 0"
+            ).fetchone()[0]
+        )
+        new_unknown_row = int(not is_known and failure is None)
+        excess = unknown_count + new_unknown_row - UNKNOWN_LOGIN_FAILURE_CAP
+        if excess > 0:
+            connection.execute(
+                "DELETE FROM login_failures WHERE account_key IN ("
+                "SELECT account_key FROM login_failures "
+                "WHERE is_known = 0 AND account_key <> ? "
+                "ORDER BY updated_at, account_key LIMIT ?"
+                ")",
+                (account_key, excess),
+            )
+
         if failure is None or now - int(failure["window_started_at"]) >= LOGIN_WINDOW_SECONDS:
             count = 1
             window_started = now
@@ -254,13 +330,15 @@ class AuthenticationStore:
         locked_until = now + LOGIN_LOCK_SECONDS if count >= LOGIN_FAILURE_LIMIT else 0
         connection.execute(
             "INSERT INTO login_failures "
-            "(account_key, failed_count, window_started_at, locked_until) "
-            "VALUES (?, ?, ?, ?) "
+            "(account_key, failed_count, window_started_at, locked_until, is_known, updated_at) "
+            "VALUES (?, ?, ?, ?, ?, ?) "
             "ON CONFLICT(account_key) DO UPDATE SET "
             "failed_count=excluded.failed_count, "
             "window_started_at=excluded.window_started_at, "
-            "locked_until=excluded.locked_until",
-            (account_key, count, window_started, locked_until),
+            "locked_until=excluded.locked_until, "
+            "is_known=MAX(login_failures.is_known, excluded.is_known), "
+            "updated_at=excluded.updated_at",
+            (account_key, count, window_started, locked_until, int(is_known), now),
         )
 
     def issue_session(self, user: AuthUserV05) -> IssuedAuthentication:
