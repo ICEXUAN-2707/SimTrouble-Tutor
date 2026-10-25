@@ -91,11 +91,17 @@ class AuthenticationStoreTests(unittest.TestCase):
                     window_started_at INTEGER NOT NULL,
                     locked_until INTEGER NOT NULL
                 );
-                INSERT INTO login_failures VALUES ('known01', 2, 100, 0);
-                INSERT INTO login_failures VALUES ('missing01', 1, 200, 0);
                 PRAGMA user_version = 1;
                 """
             )
+            connection.executemany(
+                "INSERT INTO login_failures VALUES (?, ?, ?, 0)",
+                (
+                    ("known01", 2, self.now),
+                    ("missing01", 1, self.now - 1),
+                ),
+            )
+            connection.commit()
 
         legacy = AuthenticationStore(legacy_path, clock=lambda: self.now)
         legacy.initialize()
@@ -107,9 +113,65 @@ class AuthenticationStoreTests(unittest.TestCase):
             ).fetchall()
         self.assertEqual(2, version)
         self.assertEqual(
-            [("known01", 1, 100), ("missing01", 0, 200)],
+            [
+                ("known01", 1, self.now),
+                ("missing01", 0, self.now - 1),
+            ],
             rows,
         )
+
+    def test_schema_v1_migration_immediately_restores_failure_capacity(self) -> None:
+        legacy_path = self.store.database_path.with_name("over-capacity.db")
+        with closing(sqlite3.connect(legacy_path)) as connection:
+            connection.executescript(
+                """
+                CREATE TABLE users (username_key TEXT NOT NULL UNIQUE);
+                INSERT INTO users(username_key) VALUES ('known01');
+                CREATE TABLE login_failures (
+                    account_key TEXT PRIMARY KEY,
+                    failed_count INTEGER NOT NULL,
+                    window_started_at INTEGER NOT NULL,
+                    locked_until INTEGER NOT NULL
+                );
+                PRAGMA user_version = 1;
+                """
+            )
+            connection.execute(
+                "INSERT INTO login_failures VALUES ('known01', 5, ?, ?)",
+                (self.now, self.now + 60),
+            )
+            connection.executemany(
+                "INSERT INTO login_failures VALUES (?, 1, ?, 0)",
+                (
+                    (f"unknown-{index:04d}", self.now)
+                    for index in range(UNKNOWN_LOGIN_FAILURE_CAP + 4)
+                ),
+            )
+            connection.execute(
+                "INSERT INTO login_failures VALUES ('stale-unknown', 1, ?, 0)",
+                (self.now - 5 * 60,),
+            )
+            connection.commit()
+
+        legacy = AuthenticationStore(legacy_path, clock=lambda: self.now)
+        legacy.initialize()
+        with closing(sqlite3.connect(legacy_path)) as connection:
+            version = connection.execute("PRAGMA user_version").fetchone()[0]
+            unknown_count = connection.execute(
+                "SELECT COUNT(*) FROM login_failures WHERE is_known = 0"
+            ).fetchone()[0]
+            known = connection.execute(
+                "SELECT is_known FROM login_failures "
+                "WHERE account_key = 'known01'"
+            ).fetchone()
+            stale = connection.execute(
+                "SELECT 1 FROM login_failures "
+                "WHERE account_key = 'stale-unknown'"
+            ).fetchone()
+        self.assertEqual(2, version)
+        self.assertEqual(UNKNOWN_LOGIN_FAILURE_CAP, unknown_count)
+        self.assertEqual((1,), known)
+        self.assertIsNone(stale)
 
     def test_expired_and_revoked_sessions_fail_closed(self) -> None:
         user = self.store.create_user(

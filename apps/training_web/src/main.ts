@@ -155,6 +155,7 @@ let reportLoaded: TrainingReport | null = null;
 let csrfToken: string | null = null;
 let authMode: "login" | "register" = "login";
 let applicationStarted = false;
+const CSRF_COOKIE_NAME = "simtrouble_csrf";
 
 const deg = THREE.MathUtils.degToRad;
 const steel = new THREE.MeshStandardMaterial({ color: 0x76817d, roughness: 0.54, metalness: 0.68 });
@@ -418,6 +419,43 @@ class ApiError extends Error {
   }
 }
 
+function clearExpiredAuthentication(): void {
+  csrfToken = null;
+  sessionId = null;
+  sessionView = null;
+  reportLoaded = null;
+  tutorBusy = false;
+  learningBusy = false;
+  diagnosisBusy = false;
+  hypothesisDirty = false;
+  expandedEvidence.clear();
+
+  document.cookie = `${CSRF_COOKIE_NAME}=; Max-Age=0; Path=/; SameSite=Lax`;
+  signedUser.textContent = "";
+  sessionCode.textContent = "尚未创建";
+  sessionCode.removeAttribute("title");
+  learningProgress.textContent = "尚未获取证据";
+  evidenceOptions.replaceChildren();
+  hypothesisInput.value = "";
+  hypothesisHistory.replaceChildren();
+  hypothesisCount.textContent = "0 条记录";
+  byId("hypothesis-evidence-summary").replaceChildren();
+  diagnosisType.value = "";
+  diagnosisReasoning.value = "";
+  diagnosisCitations.replaceChildren();
+  reportContent.replaceChildren();
+  tutorInput.value = "";
+  tutorLog.replaceChildren();
+  authPassword.value = "";
+
+  appRoot.hidden = true;
+  authShell.hidden = false;
+  setAuthMode("login");
+  authError.textContent = "登录已失效，请重新登录。";
+  authError.hidden = false;
+  window.location.reload();
+}
+
 async function requestJson<T>(url: string, init: RequestInit): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set("Accept", "application/json");
@@ -439,7 +477,15 @@ async function requestJson<T>(url: string, init: RequestInit): Promise<T> {
     } catch {
       // Keep the stable fallback when an upstream response is not JSON.
     }
-    throw new ApiError(response.status, detail);
+    const error = new ApiError(response.status, detail);
+    if (
+      response.status === 401
+      && detail === "authentication_required"
+      && csrfToken !== null
+    ) {
+      clearExpiredAuthentication();
+    }
+    throw error;
   }
   return await response.json() as T;
 }

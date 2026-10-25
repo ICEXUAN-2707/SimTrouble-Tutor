@@ -28,6 +28,9 @@ class DiagnosisService:
         *,
         user_id: str | None = None,
     ) -> SessionView:
+        # Authorize before consulting the report create-once fast path. Otherwise
+        # an existing report can reveal both Session existence and completion.
+        self._sessions.get(session_id, user_id=user_id)
         completion = None
 
         def complete() -> TrainingReportV04:

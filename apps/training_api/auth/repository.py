@@ -177,6 +177,8 @@ class AuthenticationStore:
                     """
                 )
             elif current == 1:
+                now = int(self._clock())
+                connection.execute("BEGIN IMMEDIATE")
                 columns = {
                     str(row["name"])
                     for row in connection.execute("PRAGMA table_info(login_failures)")
@@ -192,21 +194,44 @@ class AuthenticationStore:
                         "ALTER TABLE login_failures "
                         "ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0"
                     )
-                connection.executescript(
+                connection.execute(
                     """
                     UPDATE login_failures
                     SET is_known = CASE WHEN EXISTS (
                             SELECT 1 FROM users
                             WHERE users.username_key = login_failures.account_key
                         ) THEN 1 ELSE 0 END,
-                        updated_at = window_started_at;
-                    CREATE INDEX IF NOT EXISTS login_failures_stale_idx
-                        ON login_failures(window_started_at, locked_until);
-                    CREATE INDEX IF NOT EXISTS login_failures_unknown_eviction_idx
-                        ON login_failures(is_known, updated_at, account_key);
-                    PRAGMA user_version = 2;
+                        updated_at = window_started_at
                     """
                 )
+                connection.execute(
+                    "DELETE FROM login_failures "
+                    "WHERE window_started_at + ? <= ? AND locked_until <= ?",
+                    (LOGIN_WINDOW_SECONDS, now, now),
+                )
+                unknown_count = int(
+                    connection.execute(
+                        "SELECT COUNT(*) FROM login_failures WHERE is_known = 0"
+                    ).fetchone()[0]
+                )
+                excess = max(0, unknown_count - UNKNOWN_LOGIN_FAILURE_CAP)
+                connection.execute(
+                    "DELETE FROM login_failures WHERE account_key IN ("
+                    "SELECT account_key FROM login_failures "
+                    "WHERE is_known = 0 "
+                    "ORDER BY updated_at, account_key LIMIT ?"
+                    ")",
+                    (excess,),
+                )
+                connection.execute(
+                    "CREATE INDEX IF NOT EXISTS login_failures_stale_idx "
+                    "ON login_failures(window_started_at, locked_until)"
+                )
+                connection.execute(
+                    "CREATE INDEX IF NOT EXISTS login_failures_unknown_eviction_idx "
+                    "ON login_failures(is_known, updated_at, account_key)"
+                )
+                connection.execute("PRAGMA user_version = 2")
 
     def create_user(
         self,

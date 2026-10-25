@@ -91,9 +91,13 @@ no more than the number of registered users plus 4096 rows.
 
 - Missing credentials yield `401 authentication_required`.
 - A wrong owner yields `404 session_not_found` to avoid resource enumeration.
+- Wrong-owner and anonymous diagnosis submissions remain `404 session_not_found`
+  even after the owner has generated a report.
 - A bad or missing CSRF value yields `403 csrf_validation_failed`.
 - SQLite unavailability fails the authentication operation; it must never fall
   back to an implicitly authenticated identity.
+- Invalid `SIMTROUBLE_COOKIE_SECURE` values fail application startup instead
+  of silently disabling the cookie `Secure` attribute.
 - The deterministic rule Tutor remains available after login when LLM providers
   are disabled or unavailable.
 
@@ -122,3 +126,7 @@ no more than the number of registered users plus 4096 rows.
   `login_failures rows <= registered users + 4096` under unknown-name churn.
 - A capacity-pressure attack test proves registered and unknown locked targets
   have identical public responses after more than 4096 unknown-name writes.
+- A v1-to-v2 migration commits only after stale cleanup and the 4096-row
+  unknown-name capacity invariant have both been restored.
+- Runtime authentication expiry clears CSRF and all learner UI state before
+  returning the browser to login.

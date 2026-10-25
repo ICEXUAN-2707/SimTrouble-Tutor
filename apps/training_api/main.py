@@ -50,6 +50,25 @@ from .tutor import TutorService, build_tutor_service
 
 AUTH_COOKIE_NAME = "simtrouble_auth"
 CSRF_COOKIE_NAME = "simtrouble_csrf"
+_BOOLEAN_ENVIRONMENT_VALUES = {
+    "0": False,
+    "1": True,
+    "false": False,
+    "no": False,
+    "true": True,
+    "yes": True,
+}
+
+
+def _read_boolean_environment(name: str, *, default: bool) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    try:
+        return _BOOLEAN_ENVIRONMENT_VALUES[raw.lower()]
+    except KeyError as exc:
+        allowed = ", ".join(_BOOLEAN_ENVIRONMENT_VALUES)
+        raise ValueError(f"{name} must be one of: {allowed}") from exc
 
 
 def create_app(
@@ -59,17 +78,15 @@ def create_app(
     diagnosis_service: DiagnosisService | None = None,
     authentication_store: AuthenticationStore | None = None,
 ) -> FastAPI:
+    secure_cookies = _read_boolean_environment(
+        "SIMTROUBLE_COOKIE_SECURE", default=False
+    )
     scenes = repository or SceneRepository()
     sessions = session_service or SessionService()
     tutor = tutor_service or build_tutor_service(sessions)
     diagnosis = diagnosis_service or build_diagnosis_service(sessions)
     authentication = authentication_store or AuthenticationStore()
     authentication.initialize()
-    secure_cookies = os.environ.get("SIMTROUBLE_COOKIE_SECURE", "false").lower() in {
-        "1",
-        "true",
-        "yes",
-    }
     application = FastAPI(
         title="SimTrouble Tutor API",
         version="0.5.0",

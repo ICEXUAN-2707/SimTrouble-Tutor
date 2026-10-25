@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sqlite3
 import tempfile
 import unittest
@@ -255,6 +256,82 @@ class AuthenticationApiTests(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(401, response.status_code)
         self.assertEqual("authentication_required", response.json()["detail"])
+
+    async def test_invalid_secure_cookie_configuration_fails_startup(self) -> None:
+        for value in ("treu", "true ", "", "2"):
+            with (
+                self.subTest(value=value),
+                patch.dict(os.environ, {"SIMTROUBLE_COOKIE_SECURE": value}),
+                patch.object(self.store, "initialize") as initialize,
+                self.assertRaisesRegex(
+                    ValueError, "SIMTROUBLE_COOKIE_SECURE must be one of"
+                ),
+            ):
+                create_app(authentication_store=self.store)
+            initialize.assert_not_called()
+
+    async def test_completed_diagnosis_stays_hidden_from_wrong_owner(self) -> None:
+        await self.register(self.alice, "alice01")
+        await self.register(self.bob, "bob0001")
+        headers = self.csrf_headers(self.alice)
+        created = await self.alice.post(
+            "/api/v0.5/sessions",
+            json={"case_id": "ST-001"},
+            headers=headers,
+        )
+        session_id = created.json()["session_id"]
+        await self.alice.post(
+            f"/api/v0.5/sessions/{session_id}/evidence",
+            json={"evidence_id": "E01"},
+            headers=headers,
+        )
+        await self.alice.post(
+            f"/api/v0.5/sessions/{session_id}/hypotheses",
+            json={"hypothesis": "initial hypothesis"},
+            headers=headers,
+        )
+        await self.alice.post(
+            f"/api/v0.5/sessions/{session_id}/evidence",
+            json={"evidence_id": "E02"},
+            headers=headers,
+        )
+        await self.alice.post(
+            f"/api/v0.5/sessions/{session_id}/hypotheses",
+            json={"hypothesis": "revised hypothesis"},
+            headers=headers,
+        )
+        diagnosis = {
+            "contract_version": "0.4.0",
+            "diagnosis_type": "object_pose_mismatch",
+            "reasoning": "released evidence supports the diagnosis",
+            "cited_evidence_ids": ["E01", "E02"],
+        }
+        owner = await self.alice.post(
+            f"/api/v0.5/sessions/{session_id}/diagnosis",
+            json=diagnosis,
+            headers=headers,
+        )
+        self.assertEqual(202, owner.status_code, owner.text)
+
+        repeated = await self.alice.post(
+            f"/api/v0.5/sessions/{session_id}/diagnosis",
+            json=diagnosis,
+            headers=headers,
+        )
+        wrong_owner = await self.bob.post(
+            f"/api/v0.5/sessions/{session_id}/diagnosis",
+            json=diagnosis,
+            headers=self.csrf_headers(self.bob),
+        )
+        anonymous = await self.bob.post(
+            f"/api/v0.4/sessions/{session_id}/diagnosis",
+            json=diagnosis,
+        )
+        self.assertEqual(409, repeated.status_code)
+        self.assertEqual("diagnosis_already_submitted", repeated.json()["detail"])
+        for response in (wrong_owner, anonymous):
+            self.assertEqual(404, response.status_code, response.text)
+            self.assertEqual("session_not_found", response.json()["detail"])
 
     async def test_wrong_owner_is_hidden_across_every_training_command(self) -> None:
         await self.register(self.alice, "alice01")

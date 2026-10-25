@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { chromium } from "playwright-core";
-import { registerAndEnter, verifyAuthenticationFlow } from "./auth-flow.mjs";
+import {
+  registerAndEnter,
+  verifyAuthenticationExpiryClearsState,
+  verifyAuthenticationFlow,
+} from "./auth-flow.mjs";
 import { verifyTutorDeliveryScenarios } from "./tutor-scenarios.mjs";
 import { verifyLearningFlow } from "./learning-flow.mjs";
 import {
@@ -83,6 +87,7 @@ try {
   assert.deepEqual(errors, []);
   await page.close();
   await verifyAuthenticationFlow(browser, baseUrl);
+  await verifyAuthenticationExpiryClearsState(browser, baseUrl);
   await verifyTutorDeliveryScenarios(browser, baseUrl);
   await verifyAssessmentScenarios(browser, baseUrl);
   await verifyDiagnosisErrors(browser, baseUrl);
@@ -106,6 +111,7 @@ try {
   console.log("E2E OK: complete Diagnosis/Report flow at 1280x720, 768x1024, and 390x844");
   console.log("E2E OK: Tutor LLM success and timeout/malformed/leakage fallback delivery");
   console.log("E2E OK: registration, logout, login, and identity restore boundary");
+  console.log("E2E OK: revoked authentication clears active learning state");
   console.log("E2E OK: 390px responsive viewport");
 } finally {
   await browser.close();

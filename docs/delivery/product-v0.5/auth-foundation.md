@@ -21,6 +21,10 @@
 - authenticated `/api/v0.5/sessions` learning routes;
 - authoritative training-Session ownership checks across Evidence, Hypothesis,
   Tutor, Diagnosis and Report operations;
+- ownership checks before report create-once lookup, including completed
+  diagnosis submissions through authenticated and anonymous routes;
+- strict cookie-security configuration and migration-time failed-login cleanup;
+- centralized runtime authentication-expiry cleanup for all learner UI state;
 - integrated Vite login/register/logout interface;
 - Product v0.4 anonymous compatibility without access to account-owned Sessions.
 
@@ -33,7 +37,7 @@ does not claim durable learning history or cloud sync.
 
 ## Verification
 
-- 151 Python tests: pass;
+- 154 Python tests: pass;
 - Product v0.5 contract/repository/API tests: pass;
 - TypeScript type check and production build: pass;
 - browser E2E including registration, logout, login, desktop/mobile learning,
