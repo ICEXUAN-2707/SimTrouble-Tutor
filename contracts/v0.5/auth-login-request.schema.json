@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://simtrouble.local/contracts/v0.5/auth-login-request.schema.json",
+  "title": "AuthLoginRequestV05",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["username", "password"],
+  "properties": {
+    "username": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 32,
+      "pattern": "^[A-Za-z0-9_\\u4e00-\\u9fff-]+$"
+    },
+    "password": {"type": "string", "minLength": 1, "maxLength": 128}
+  }
+}

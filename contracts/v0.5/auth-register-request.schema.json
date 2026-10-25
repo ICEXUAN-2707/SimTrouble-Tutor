@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://simtrouble.local/contracts/v0.5/auth-register-request.schema.json",
+  "title": "AuthRegisterRequestV05",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["username", "password"],
+  "properties": {
+    "username": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 32,
+      "pattern": "^[A-Za-z0-9_\\u4e00-\\u9fff-]+$"
+    },
+    "password": {"type": "string", "minLength": 15, "maxLength": 128},
+    "display_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32,
+      "pattern": "^(?!\\s)(?!.*[\\u0000-\\u001F\\u007F-\\u009F]).*\\S$"
+    }
+  }
+}

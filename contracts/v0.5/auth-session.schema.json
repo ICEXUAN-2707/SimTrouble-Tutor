@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://simtrouble.local/contracts/v0.5/auth-session.schema.json",
+  "title": "AuthSessionV05",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["user", "expires_at", "csrf_token"],
+  "properties": {
+    "user": {"$ref": "auth-user.schema.json"},
+    "expires_at": {"type": "integer", "minimum": 0},
+    "csrf_token": {"type": "string", "minLength": 32}
+  }
+}
