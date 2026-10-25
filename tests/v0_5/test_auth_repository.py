@@ -9,7 +9,6 @@ from unittest.mock import patch
 
 from apps.training_api.auth.repository import (
     AuthenticationStore,
-    LoginRateLimitedError,
     UNKNOWN_LOGIN_FAILURE_CAP,
     UsernameUnavailableError,
     hash_password,
@@ -126,16 +125,39 @@ class AuthenticationStoreTests(unittest.TestCase):
         self.now = issued.expires_at
         self.assertIsNone(self.store.resolve(issued.token))
 
-    def test_failed_login_is_rate_limited_without_account_disclosure(self) -> None:
-        for _ in range(5):
-            self.assertIsNone(self.store.authenticate("missing-user", "wrong-password"))
-        with self.assertRaises(LoginRateLimitedError):
-            self.store.authenticate("missing-user", "wrong-password")
+    def test_locked_login_remains_generic_and_does_not_extend_lock(self) -> None:
+        with patch(
+            "apps.training_api.auth.repository.verify_password", return_value=False
+        ) as verifier:
+            for _ in range(6):
+                self.assertIsNone(
+                    self.store.authenticate("missing-user", "wrong-password")
+                )
+            self.assertEqual(6, verifier.call_count)
 
+        with closing(sqlite3.connect(self.store.database_path)) as connection:
+            locked_until = connection.execute(
+                "SELECT locked_until FROM login_failures "
+                "WHERE account_key = 'missing-user'"
+            ).fetchone()[0]
+        self.assertEqual(self.now + 15 * 60, locked_until)
+
+        self.now += 60
         restarted = AuthenticationStore(self.store.database_path, clock=lambda: self.now)
         restarted.initialize()
-        with self.assertRaises(LoginRateLimitedError):
-            restarted.authenticate("missing-user", "wrong-password")
+        with patch(
+            "apps.training_api.auth.repository.verify_password", return_value=False
+        ) as verifier:
+            self.assertIsNone(
+                restarted.authenticate("missing-user", "wrong-password")
+            )
+            verifier.assert_called_once()
+        with closing(sqlite3.connect(self.store.database_path)) as connection:
+            persisted_lock = connection.execute(
+                "SELECT locked_until FROM login_failures "
+                "WHERE account_key = 'missing-user'"
+            ).fetchone()[0]
+        self.assertEqual(locked_until, persisted_lock)
 
     def test_stale_unknown_login_failure_is_removed_on_next_failure(self) -> None:
         with patch(
@@ -233,8 +255,9 @@ class AuthenticationStoreTests(unittest.TestCase):
         self.assertEqual((1, self.now + 15 * 60), protected)
         self.assertEqual(2, unknown_count)
         self.assertLessEqual(total_count, 1 + 2)
-        with self.assertRaises(LoginRateLimitedError):
+        self.assertIsNone(
             self.store.authenticate("Protected01", "correct-horse-battery")
+        )
 
 
 if __name__ == "__main__":

@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import sqlite3
 import tempfile
 import unittest
+from contextlib import closing
 from pathlib import Path
+from unittest.mock import patch
 
 from httpx import ASGITransport, AsyncClient
 
@@ -20,6 +23,7 @@ class AuthenticationApiTests(unittest.IsolatedAsyncioTestCase):
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         store = AuthenticationStore(Path(directory.name) / "auth.db")
+        self.store = store
         sessions = SessionService()
         self.app = create_app(
             session_service=sessions,
@@ -93,6 +97,9 @@ class AuthenticationApiTests(unittest.IsolatedAsyncioTestCase):
             {"username": "user01", "password": "x" * 14},
             {"username": "user01", "password": TEST_PASSWORD, "display_name": None},
             {"username": "user01", "password": TEST_PASSWORD, "display_name": "   "},
+            {"username": "user01", "password": TEST_PASSWORD, "display_name": "A\u0080B"},
+            {"username": "user01", "password": TEST_PASSWORD, "display_name": "A\u0085B"},
+            {"username": "user01", "password": TEST_PASSWORD, "display_name": "A\u009fB"},
             {"username": "user01", "password": TEST_PASSWORD, "unknown": True},
         )
         for payload in invalid_registrations:
@@ -116,6 +123,76 @@ class AuthenticationApiTests(unittest.IsolatedAsyncioTestCase):
                 )
                 self.assertEqual(401, response.status_code, response.text)
                 self.assertEqual("invalid_credentials", response.json()["detail"])
+
+    async def test_capacity_pressure_cannot_reveal_account_existence(self) -> None:
+        await self.register(self.alice, "target01")
+        attempts = 0
+        responses = []
+        with (
+            patch(
+                "apps.training_api.auth.repository.UNKNOWN_LOGIN_FAILURE_CAP", 3
+            ),
+            patch(
+                "apps.training_api.auth.repository.verify_password",
+                return_value=False,
+            ) as verifier,
+        ):
+            for _ in range(5):
+                responses.append(
+                    await self.bob.post(
+                        "/api/v0.5/auth/login",
+                        json={"username": "target01", "password": "wrong"},
+                    )
+                )
+                attempts += 1
+                responses.append(
+                    await self.bob.post(
+                        "/api/v0.5/auth/login",
+                        json={"username": "missing-target", "password": "wrong"},
+                    )
+                )
+                attempts += 1
+            for index in range(6):
+                responses.append(
+                    await self.bob.post(
+                        "/api/v0.5/auth/login",
+                        json={"username": f"churn-{index}", "password": "wrong"},
+                    )
+                )
+                attempts += 1
+
+            known = await self.bob.post(
+                "/api/v0.5/auth/login",
+                json={"username": "target01", "password": TEST_PASSWORD},
+            )
+            unknown = await self.bob.post(
+                "/api/v0.5/auth/login",
+                json={"username": "missing-target", "password": TEST_PASSWORD},
+            )
+            responses.extend((known, unknown))
+            attempts += 2
+            self.assertEqual(attempts, verifier.call_count)
+
+        for response in responses:
+            self.assertEqual(401, response.status_code, response.text)
+            self.assertEqual({"detail": "invalid_credentials"}, response.json())
+            self.assertNotIn("retry-after", response.headers)
+            self.assertNotIn("set-cookie", response.headers)
+        self.assertEqual(known.status_code, unknown.status_code)
+        self.assertEqual(known.content, unknown.content)
+        self.assertEqual(dict(known.headers), dict(unknown.headers))
+
+        with closing(sqlite3.connect(self.store.database_path)) as connection:
+            protected = connection.execute(
+                "SELECT is_known, locked_until FROM login_failures "
+                "WHERE account_key = 'target01'"
+            ).fetchone()
+            unknown_count = connection.execute(
+                "SELECT COUNT(*) FROM login_failures WHERE is_known = 0"
+            ).fetchone()[0]
+        self.assertEqual(1, protected[0])
+        self.assertGreater(protected[1], 0)
+        self.assertLessEqual(unknown_count, 3)
 
     async def test_display_name_default_case_matching_and_exact_password(self) -> None:
         exact_password = " exact password "

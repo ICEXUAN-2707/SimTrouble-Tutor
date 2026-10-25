@@ -9,7 +9,6 @@ from .models import (
 from .repository import (
     AuthenticationContext,
     AuthenticationStore,
-    LoginRateLimitedError,
     UsernameUnavailableError,
 )
 
@@ -18,7 +17,6 @@ __all__ = [
     "AuthUserV05",
     "AuthenticationContext",
     "AuthenticationStore",
-    "LoginRateLimitedError",
     "LoginRequest",
     "RegisterRequest",
     "UsernameUnavailableError",

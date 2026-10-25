@@ -16,7 +16,6 @@ from .auth import (
     AuthSessionV05,
     AuthenticationContext,
     AuthenticationStore,
-    LoginRateLimitedError,
     LoginRequest,
     RegisterRequest,
     UsernameUnavailableError,
@@ -170,10 +169,7 @@ def create_app(
 
     @application.post("/api/v0.5/auth/login", response_model=AuthSessionV05)
     def login(request: LoginRequest, response: Response) -> AuthSessionV05:
-        try:
-            user = authentication.authenticate(request.username, request.password)
-        except LoginRateLimitedError as exc:
-            raise HTTPException(status_code=429, detail="login_rate_limited") from exc
+        user = authentication.authenticate(request.username, request.password)
         if user is None:
             raise HTTPException(status_code=401, detail="invalid_credentials")
         issued = authentication.issue_session(user)

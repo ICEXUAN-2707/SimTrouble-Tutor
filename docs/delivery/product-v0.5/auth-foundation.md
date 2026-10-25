@@ -11,6 +11,9 @@
 - random server-issued authentication and CSRF tokens with digest-only storage;
 - persisted failed-login window and lock with stale-row cleanup and a 4096-row
   cap for unknown usernames;
+- uniform `401 invalid_credentials` behavior across unknown, locked and
+  capacity-evicted account keys, with one real or dummy verifier check per
+  well-formed login attempt;
 - strict request validation for canonical usernames, exact 15-128-character
   registration passwords and optional non-blank display names;
 - registration, login, identity restore and logout APIs;
@@ -30,7 +33,7 @@ does not claim durable learning history or cloud sync.
 
 ## Verification
 
-- 150 Python tests: pass;
+- 151 Python tests: pass;
 - Product v0.5 contract/repository/API tests: pass;
 - TypeScript type check and production build: pass;
 - browser E2E including registration, logout, login, desktop/mobile learning,

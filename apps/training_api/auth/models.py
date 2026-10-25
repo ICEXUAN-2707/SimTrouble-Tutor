@@ -10,7 +10,7 @@ from ..learning_models import FrozenContract
 
 
 USERNAME_PATTERN_TEXT = r"^[A-Za-z0-9_\u4e00-\u9fff-]{3,32}$"
-DISPLAY_NAME_PATTERN_TEXT = r"^(?!\s)(?!.*[\x00-\x1F\x7F]).*\S$"
+DISPLAY_NAME_PATTERN_TEXT = r"^(?!\s)(?!.*[\x00-\x1F\x7F-\x9F]).*\S$"
 USERNAME_PATTERN = re.compile(USERNAME_PATTERN_TEXT)
 DISPLAY_NAME_PATTERN = re.compile(DISPLAY_NAME_PATTERN_TEXT)
 MIN_PASSWORD_LENGTH = 15

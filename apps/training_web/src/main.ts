@@ -1057,7 +1057,6 @@ function authErrorMessage(error: unknown): string {
     invalid_registration: "请使用有效的 3–32 位账号和至少 15 位密码。",
     username_unavailable: "该账号已被注册，请更换账号或直接登录。",
     invalid_credentials: "账号或密码不正确。",
-    login_rate_limited: "失败次数过多，请稍后再试。",
     authentication_required: "登录已失效，请重新登录。",
   };
   return messages[error.detail] ?? "身份验证失败，请重试。";

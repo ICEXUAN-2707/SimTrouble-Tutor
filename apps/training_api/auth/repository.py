@@ -34,10 +34,6 @@ class UsernameUnavailableError(ValueError):
     """Raised when a normalized username already exists."""
 
 
-class LoginRateLimitedError(RuntimeError):
-    """Raised after the bounded failed-login threshold is reached."""
-
-
 class UnsupportedSchemaError(RuntimeError):
     """Raised when the database is newer than this application."""
 
@@ -252,8 +248,7 @@ class AuthenticationStore:
                 "FROM login_failures WHERE account_key = ?",
                 (account_key,),
             ).fetchone()
-            if failure is not None and int(failure["locked_until"]) > now:
-                raise LoginRateLimitedError(account_key)
+            locked = failure is not None and int(failure["locked_until"]) > now
 
             row = connection.execute(
                 "SELECT user_id, username, display_name, password_hash "
@@ -262,7 +257,7 @@ class AuthenticationStore:
             ).fetchone()
             stored = row["password_hash"] if row is not None else _DUMMY_PASSWORD_HASH
             valid = verify_password(password, stored)
-            if row is None or not valid:
+            if locked or row is None or not valid:
                 self._record_failure(
                     connection,
                     account_key,
@@ -310,24 +305,35 @@ class AuthenticationStore:
             ).fetchone()[0]
         )
         new_unknown_row = int(not is_known and failure is None)
-        excess = unknown_count + new_unknown_row - UNKNOWN_LOGIN_FAILURE_CAP
-        if excess > 0:
-            connection.execute(
-                "DELETE FROM login_failures WHERE account_key IN ("
-                "SELECT account_key FROM login_failures "
-                "WHERE is_known = 0 AND account_key <> ? "
-                "ORDER BY updated_at, account_key LIMIT ?"
-                ")",
-                (account_key, excess),
-            )
+        excess = max(
+            0, unknown_count + new_unknown_row - UNKNOWN_LOGIN_FAILURE_CAP
+        )
+        connection.execute(
+            "DELETE FROM login_failures WHERE account_key IN ("
+            "SELECT account_key FROM login_failures "
+            "WHERE is_known = 0 AND account_key <> ? "
+            "ORDER BY updated_at, account_key LIMIT ?"
+            ")",
+            (account_key, excess),
+        )
 
-        if failure is None or now - int(failure["window_started_at"]) >= LOGIN_WINDOW_SECONDS:
+        if failure is not None and int(failure["locked_until"]) > now:
+            count = int(failure["failed_count"])
+            window_started = int(failure["window_started_at"])
+            locked_until = int(failure["locked_until"])
+        elif (
+            failure is None
+            or now - int(failure["window_started_at"]) >= LOGIN_WINDOW_SECONDS
+        ):
             count = 1
             window_started = now
+            locked_until = 0
         else:
             count = int(failure["failed_count"]) + 1
             window_started = int(failure["window_started_at"])
-        locked_until = now + LOGIN_LOCK_SECONDS if count >= LOGIN_FAILURE_LIMIT else 0
+            locked_until = (
+                now + LOGIN_LOCK_SECONDS if count >= LOGIN_FAILURE_LIMIT else 0
+            )
         connection.execute(
             "INSERT INTO login_failures "
             "(account_key, failed_count, window_started_at, locked_until, is_known, updated_at) "
