@@ -79,7 +79,9 @@ no more than the number of registered users plus 4096 rows.
   `Secure` when configured for HTTPS.
 - State-changing authenticated requests require an `X-CSRF-Token` value that
   matches both the browser CSRF cookie and the server-side session digest.
-- Login failure responses do not disclose whether the account exists.
+- Every rejected login returns the same `401 invalid_credentials` response,
+  regardless of account existence, lock state or unknown-row eviction. Each
+  well-formed attempt performs one real or dummy password-verifier check.
 - Repeated failed logins are bounded by a persisted per-account-key limiter.
 - API responses include basic anti-sniffing, framing and referrer headers.
 - Secrets, password values, raw tokens and provider credentials never enter
@@ -118,3 +120,5 @@ no more than the number of registered users plus 4096 rows.
   boundary-violating fields in contract tests.
 - Failed-login cleanup and capacity tests prove
   `login_failures rows <= registered users + 4096` under unknown-name churn.
+- A capacity-pressure attack test proves registered and unknown locked targets
+  have identical public responses after more than 4096 unknown-name writes.

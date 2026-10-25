@@ -64,9 +64,10 @@ does not trim, case-fold, truncate or Unicode-normalize them. No character-class
 composition rule is imposed.
 
 `display_name` is optional during registration. When omitted, it defaults to
-the registered username. When supplied, it contains 1-32 Unicode code points
-and has no leading/trailing whitespace or control characters. JSON `null`, an
-empty string and a whitespace-only value are invalid.
+the registered username. When supplied, it contains 1-32 Unicode code points,
+has no leading/trailing whitespace, and excludes every Unicode C0/C1 control
+character (`U+0000-U+001F` and `U+007F-U+009F`). JSON `null`, an empty string
+and a whitespace-only value are invalid.
 
 ### Registration
 
@@ -104,7 +105,17 @@ validation-error echoes and logs.
 - Cleanup, capacity enforcement and failure recording occur in one SQLite
   transaction. The invariant is
   `login_failures rows <= registered users + 4096`.
-- Public error bodies remain identical whether or not the username exists.
+- Account existence, lock state and unknown-row eviction never change the
+  public login result: every rejected credential returns HTTP 401 with
+  `invalid_credentials`, including a correct password while its identity key
+  is locked. Account-specific throttling does not emit `Retry-After`, set a
+  cookie or otherwise expose a distinguishable response header.
+- Each well-formed login attempt performs exactly one password-verifier check.
+  An unknown username is checked against a fixed valid dummy verifier; a
+  locked registered username is still checked against its stored verifier.
+- Capacity-pressure acceptance locks one registered and one unknown identity
+  key, writes more than 4096 other unknown keys, then proves that the two
+  targets retain identical public status, body and security-relevant headers.
 
 ## Stable errors
 
@@ -115,7 +126,6 @@ validation-error echoes and logs.
 | 401 | `invalid_credentials` | generic failed login |
 | 403 | `csrf_validation_failed` | missing or invalid CSRF proof |
 | 409 | `username_unavailable` | normalized username already registered |
-| 429 | `login_rate_limited` | bounded failed-login threshold reached |
 | 404 | `session_not_found` | absent or wrong-owner training Session |
 
 Existing Product v0.4 domain errors retain their current status and detail.
