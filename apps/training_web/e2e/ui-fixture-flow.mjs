@@ -23,6 +23,7 @@ async function setup(page) {
  const json=(route,data,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(data)});
  await page.route('**/api/**', async route=>{
   const req=route.request(), path=new URL(req.url()).pathname;
+  if(path.endsWith('/auth/me')) return json(route,{user:{user_id:'fixture-user',username:'fixture',display_name:'测试学员'},expires_at:1800000000,csrf_token:'x'.repeat(32)});
   if(path.endsWith('/scene')) return json(route,fixtureScene);
   if(path.endsWith('/sessions')) return json(route,session);
   if(path.endsWith('/evidence')) {
@@ -95,5 +96,5 @@ try {
  console.log('PASS: frontend fixture – permissions, evidence disclosure/folding/errors, hypothesis draft + revision, assistant close/reopen + focus, citations persistence, report retry without duplicate POST, session-preserving replay, 4 viewport widths, no page errors.');
  await page.close();
  // Production failure state: no fake data is injected by the app itself.
- const offline=await browser.newPage();await offline.route('**/api/**',r=>r.fulfill({status:503,body:'unavailable'}));await offline.goto(base);await offline.getByText('场景加载失败',{exact:true}).waitFor();console.log('PASS: scene API failure displays a recoverable Chinese error.');
+ const offline=await browser.newPage();await offline.route('**/api/**',r=>{const path=new URL(r.request().url()).pathname;if(path.endsWith('/auth/me'))return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({user:{user_id:'fixture-user',username:'fixture',display_name:'测试学员'},expires_at:1800000000,csrf_token:'x'.repeat(32)})});return r.fulfill({status:503,body:'unavailable'});});await offline.goto(base);await offline.getByText('场景加载失败',{exact:true}).waitFor();console.log('PASS: scene API failure displays a recoverable Chinese error.');
 } finally {await browser.close();await server.close();}

@@ -1,5 +1,10 @@
 import assert from "node:assert/strict";
 import { chromium } from "playwright-core";
+import {
+  registerAndEnter,
+  verifyAuthenticationExpiryClearsState,
+  verifyAuthenticationFlow,
+} from "./auth-flow.mjs";
 import { verifyTutorDeliveryScenarios } from "./tutor-scenarios.mjs";
 import { verifyLearningFlow } from "./learning-flow.mjs";
 import {
@@ -20,8 +25,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
-  await page.locator("#loading-state").waitFor({ state: "hidden" });
+  await registerAndEnter(page, baseUrl, "main");
   await page.locator("#tutor-status").filter({ hasText: "可用" }).waitFor({ state: "attached" });
   assert.equal(await page.locator("#case-state").textContent(), "准备就绪");
   assert.equal(await page.locator("#fault-callout").isHidden(), true);
@@ -82,14 +86,15 @@ try {
   assert.deepEqual(visibleEnglish, []);
   assert.deepEqual(errors, []);
   await page.close();
+  await verifyAuthenticationFlow(browser, baseUrl);
+  await verifyAuthenticationExpiryClearsState(browser, baseUrl);
   await verifyTutorDeliveryScenarios(browser, baseUrl);
   await verifyAssessmentScenarios(browser, baseUrl);
   await verifyDiagnosisErrors(browser, baseUrl);
   await verifyResponsiveDiagnosisFlows(browser, baseUrl);
 
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
-  await mobile.goto(baseUrl, { waitUntil: "domcontentloaded" });
-  await mobile.locator("#loading-state").waitFor({ state: "hidden" });
+  await registerAndEnter(mobile, baseUrl, "mobile");
   assert.equal(await mobile.locator("#play-button").isVisible(), true);
   assert.equal(await mobile.locator("#cad-viewport canvas").isVisible(), true);
   const mobileWidth = await mobile.evaluate(() => ({
@@ -105,6 +110,8 @@ try {
   console.log("E2E OK: Diagnosis 409/422 error mapping preserves form and Session");
   console.log("E2E OK: complete Diagnosis/Report flow at 1280x720, 768x1024, and 390x844");
   console.log("E2E OK: Tutor LLM success and timeout/malformed/leakage fallback delivery");
+  console.log("E2E OK: registration, logout, login, and identity restore boundary");
+  console.log("E2E OK: revoked authentication clears active learning state");
   console.log("E2E OK: 390px responsive viewport");
 } finally {
   await browser.close();

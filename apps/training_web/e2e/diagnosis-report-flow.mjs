@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
+import { registerAndEnter } from "./auth-flow.mjs";
 
 async function prepareDiagnosis(page, baseUrl) {
-  await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
+  await registerAndEnter(page, baseUrl, "diagnosis");
   await page.locator("#tutor-status").filter({ hasText: "可用" }).waitFor({ state: "attached" });
   await page.locator('[data-step="evidence"]').click();
   await page.locator("[data-evidence-id='E01']").click();
@@ -59,7 +60,7 @@ export async function verifyDiagnosisReportFlow(page) {
   page.on("request", countDiagnosis);
 
   let reportRequests = 0;
-  await page.route("**/api/v0.4/sessions/*/report", async (route) => {
+  await page.route("**/api/v0.5/sessions/*/report", async (route) => {
     reportRequests += 1;
     if (reportRequests === 1) {
       await route.fulfill({
@@ -93,7 +94,7 @@ export async function verifyDiagnosisReportFlow(page) {
   await page.waitForTimeout(100);
   assert.equal(diagnosisRequests, 1);
   page.off("request", countDiagnosis);
-  await page.unroute("**/api/v0.4/sessions/*/report");
+  await page.unroute("**/api/v0.5/sessions/*/report");
 }
 
 export async function verifyAssessmentScenarios(browser, baseUrl) {
@@ -128,7 +129,7 @@ export async function verifyDiagnosisErrors(browser, baseUrl) {
   try {
     await prepareDiagnosis(page, baseUrl);
     const sessionId = await page.locator("#session-code").getAttribute("title");
-    await page.route("**/api/v0.4/sessions/*/diagnosis", async (route) => {
+    await page.route("**/api/v0.5/sessions/*/diagnosis", async (route) => {
       const body = route.request().postDataJSON();
       assert.deepEqual(body.cited_evidence_ids, ["E01"]);
       const failure = failures[attempt];
