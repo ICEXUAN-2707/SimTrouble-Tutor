@@ -54,3 +54,20 @@ Status: local gates complete; GitHub review/CI and base-Phase ordering remain.
 
 The Phase may enter `develop` only after Product v0.4 has entered `develop` and
 all T4 checks pass.
+
+## T5 / M2 — Minimal completed training records
+
+Scope authorized on 2026-10-26; see [M2_STORAGE.md](M2_STORAGE.md).
+
+1. Add one `training_records` table to the existing SQLite file and initializer.
+2. Save a user-owned public completion snapshot and authoritative report inside
+   the existing atomic completion callback; read through existing GET routes.
+3. Verify restart/relogin, ownership, duplicate submission, failed-write retry,
+   migration preservation and full regression.
+
+No history list, new route, UI, export, analytics, unfinished-session recovery,
+Tutor conversation persistence, ORM or additional database service.
+Implementation and local verification complete: seven new M2 tests, all 163
+Python tests, production build and authenticated Edge browser E2E pass.
+Remote CI and review remain pending.
+Merge order stays M0 → M2 → M1; the M2 task is stacked on the verified M0 branch.

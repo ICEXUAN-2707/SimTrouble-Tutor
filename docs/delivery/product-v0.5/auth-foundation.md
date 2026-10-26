@@ -30,10 +30,11 @@
 
 ## Storage truth
 
-Only accounts, authentication sessions, CSRF digests and bounded failed-login
-state are durable. Training Sessions, Tutor conversations and Reports remain
-process-local and are lost when the API restarts. This implementation therefore
-does not claim durable learning history or cloud sync.
+At authentication-foundation delivery, only accounts, authentication sessions,
+CSRF digests and bounded failed-login state were durable. The later M2 task
+adds completed training records and reports to the same SQLite file; see
+`specs/product/product-v0.5/M2_STORAGE.md`. Active training Sessions and Tutor
+conversations remain process-local; cloud sync is outside scope.
 
 ## Verification
 
@@ -53,5 +54,4 @@ does not claim durable learning history or cloud sync.
 - Product v0.4 Phase gate and merge into `develop`;
 - rebase the stacked v0.5 Phase onto that updated `develop` before Phase merge.
 
-Password recovery, account deletion UI, roles, SSO and durable learning history
-remain explicitly out of scope.
+Password recovery, account deletion UI, roles and SSO remain explicitly out of scope.

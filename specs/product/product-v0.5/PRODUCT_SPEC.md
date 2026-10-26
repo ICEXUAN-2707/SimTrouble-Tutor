@@ -16,7 +16,8 @@ The deliverable is:
 2. server-side revocable authentication sessions in SQLite;
 3. authenticated ownership of newly created training Sessions;
 4. denial of cross-user access without disclosing whether a Session exists;
-5. an integrated login/register experience in `apps/training_web`.
+5. an integrated login/register experience in `apps/training_web`;
+6. M2: one SQLite record per completed user-owned training, readable after restart.
 
 ## 2. User journey
 
@@ -48,12 +49,16 @@ SQLite stores only:
 
 - account identity and password verifier;
 - authentication session token digest, CSRF token digest and expiry;
-- schema version and bounded failed-login state.
+- schema version and bounded failed-login state;
+- completed user-owned training records: public SessionView and authoritative Report.
 
 The raw authentication token, raw CSRF token, passwords, Tutor prompts, Case
-private data, training Trace and Reports are not stored in the authentication
-database. Product v0.5 does not make authoritative training Sessions durable;
-they remain process-local and are lost when the API restarts.
+private data and full training Trace are not stored in the database.
+M2 stores only completed training snapshots and reports in the existing SQLite
+file. Active authoritative Sessions and Tutor conversations remain process-local.
+Existing authenticated Session/Report GET routes can read a completed record by
+Session ID after restart. M2 adds no history list, resume workflow or public API.
+The exact scope and stop criteria are in [M2_STORAGE.md](M2_STORAGE.md).
 
 Database schema changes are versioned and fail closed when a newer unsupported
 schema is encountered. Runtime database files remain outside Git.
@@ -107,7 +112,7 @@ no more than the number of registered users plus 4096 rows.
 - password reset or account recovery;
 - roles, administrators, organizations or multi-tenancy;
 - OAuth, social login, SSO or institutional identity providers;
-- cloud sync, cross-device learning history or durable training Sessions;
+- cloud sync, cross-device learning history or resuming unfinished training Sessions;
 - profile editing, account deletion UI or analytics dashboards;
 - importing the standalone server-rendered HTML application as a second app.
 
@@ -130,3 +135,6 @@ no more than the number of registered users plus 4096 rows.
   unknown-name capacity invariant have both been restored.
 - Runtime authentication expiry clears CSRF and all learner UI state before
   returning the browser to login.
+- Completed user-owned records survive API restart; wrong-owner and anonymous
+  reads stay hidden, failed writes leave diagnosis retryable, and existing
+  account data survives the additive v2-to-v3 database migration.

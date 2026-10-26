@@ -17,7 +17,7 @@ from uuid import uuid4
 from .models import AuthUserV05
 
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 PASSWORD_ITERATIONS = 600_000
 SESSION_TTL_SECONDS = 7 * 24 * 60 * 60
 LOGIN_WINDOW_SECONDS = 5 * 60
@@ -232,6 +232,23 @@ class AuthenticationStore:
                     "ON login_failures(is_known, updated_at, account_key)"
                 )
                 connection.execute("PRAGMA user_version = 2")
+
+            if current < 3:
+                if not connection.in_transaction:
+                    connection.execute("BEGIN IMMEDIATE")
+                connection.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS training_records (
+                        session_id TEXT PRIMARY KEY,
+                        user_id TEXT NOT NULL REFERENCES users(user_id),
+                        case_id TEXT NOT NULL,
+                        completed_at INTEGER NOT NULL,
+                        session_json TEXT NOT NULL,
+                        report_json TEXT NOT NULL
+                    )
+                    """
+                )
+                connection.execute("PRAGMA user_version = 3")
 
     def create_user(
         self,
