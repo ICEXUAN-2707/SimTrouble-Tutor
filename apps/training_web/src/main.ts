@@ -902,7 +902,7 @@ function bindLearning(): void {
       );
       hypothesisDirty = false;
       renderSession(response);
-      setLearningNotice(hasAction("submit_diagnosis") ? "假设已修正，可以进入诊断。" : "初始假设已记录。请继续请求证据并修正假设。");
+      setLearningNotice(hasAction("submit_diagnosis") ? "假设已修正，可以进入诊断。" : "初始假设已记录。你可以继续取证，或根据已有证据修正假设。");
     } catch (error) {
       showLearningError(error);
       setLearningNotice("提交未完成；输入内容和现有学习进度均已保留。");

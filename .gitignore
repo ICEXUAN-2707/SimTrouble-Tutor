@@ -16,5 +16,6 @@ dist/
 *.db-shm
 *.db-wal
 /.tmp/
+/.archive/
 /zjh/
 /学生卡.jpg

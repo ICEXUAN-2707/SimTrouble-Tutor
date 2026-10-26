@@ -139,12 +139,17 @@ class SessionService:
             stage = aggregate.session.current_stage
             if stage is DiagnosticStage.INVESTIGATE:
                 aggregate.transition_to(DiagnosticStage.HYPOTHESIZE)
+                aggregate.submit_hypothesis(normalized)
+                aggregate.transition_to(DiagnosticStage.TEST)
+                return self._projector.project(aggregate)
+            if stage is DiagnosticStage.HYPOTHESIZE:
+                # Recover sessions created by the previous application mapping,
+                # which left the learner here until another Evidence request.
+                aggregate.transition_to(DiagnosticStage.TEST)
+                aggregate.transition_to(DiagnosticStage.UPDATE)
             elif stage is DiagnosticStage.TEST:
                 aggregate.transition_to(DiagnosticStage.UPDATE)
-            elif stage not in {
-                DiagnosticStage.HYPOTHESIZE,
-                DiagnosticStage.UPDATE,
-            }:
+            elif stage is not DiagnosticStage.UPDATE:
                 raise SessionStageConflictError(
                     f"hypothesis is not allowed during {stage.value}"
                 )

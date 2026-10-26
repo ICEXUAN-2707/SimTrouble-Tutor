@@ -88,6 +88,7 @@ try {
   await page.close();
   await verifyAuthenticationFlow(browser, baseUrl);
   await verifyAuthenticationExpiryClearsState(browser, baseUrl);
+  await verifyPrecollectedEvidenceUnlock(browser, baseUrl);
   await verifyTutorDeliveryScenarios(browser, baseUrl);
   await verifyAssessmentScenarios(browser, baseUrl);
   await verifyDiagnosisErrors(browser, baseUrl);

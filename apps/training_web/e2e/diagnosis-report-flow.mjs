@@ -97,6 +97,35 @@ export async function verifyDiagnosisReportFlow(page) {
   await page.unroute("**/api/v0.5/sessions/*/report");
 }
 
+export async function verifyPrecollectedEvidenceUnlock(browser, baseUrl) {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  try {
+    await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
+    await page.locator("#tutor-status").filter({ hasText: "可用" }).waitFor({ state: "attached" });
+    await page.locator('[data-step="evidence"]').click();
+    for (const evidenceId of ["E01", "E02", "E03"]) {
+      const option = page.locator(`[data-evidence-id='${evidenceId}']`);
+      await option.click();
+      await option.filter({ hasText: "收起证据" }).waitFor();
+    }
+    await page.locator("#learning-progress").filter({ hasText: "3 / 3 条证据" }).waitFor();
+
+    await page.locator('[data-step="hypothesis"]').click();
+    await page.locator("#hypothesis-input").fill("夹爪可能没有保持工件。");
+    await page.locator("#hypothesis-submit").click();
+    await page.locator("#hypothesis-count").filter({ hasText: "1 条记录" }).waitFor({ state: "attached" });
+    assert.equal(await page.locator("#diagnosis-status").textContent(), "未解锁");
+
+    await page.locator("#hypothesis-input").fill("已有位姿证据表明工件偏离计划位置。");
+    await page.locator("#hypothesis-submit").click();
+    await page.locator("#diagnosis-status").filter({ hasText: "可提交" }).waitFor({ state: "attached" });
+    await page.locator('[data-step="diagnosis"]').click();
+    assert.equal(await page.locator("#diagnosis-citations input").count(), 3);
+  } finally {
+    await page.close();
+  }
+}
+
 export async function verifyAssessmentScenarios(browser, baseUrl) {
   const scenarios = [
     { type: "object_pose_mismatch", evidence: ["E02"], assessment: "insufficient" },

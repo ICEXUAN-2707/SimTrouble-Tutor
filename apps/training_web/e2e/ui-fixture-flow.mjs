@@ -19,7 +19,16 @@ const fixtureScene = {
 let createCount=0, diagnosticPosts=0;
 async function setup(page) {
  let session={contract_version:'0.4.0',session_id:`fixture-${++createCount}`,case_public_state:{evidence_options:[{id:'E01',type:'gripper_state'},{id:'E02',type:'object_pose'},{id:'E03',type:'target_pose'}]},public_stage:'READY',released_evidence:[],current_hypothesis:null,hypotheses:[],allowed_actions:['observe_scene','inspect_evidence']};
- let reportReads=0;
+ let internalStage='OBSERVE', reportReads=0;
+ const syncActions=()=>{
+  const actions={
+   OBSERVE:['observe_scene','inspect_evidence'],
+   INVESTIGATE:['inspect_evidence','submit_hypothesis'],
+   TEST:['inspect_evidence','revise_hypothesis'],
+   UPDATE:['inspect_evidence','revise_hypothesis','submit_diagnosis'],
+  };
+  session.allowed_actions=actions[internalStage] ?? [];
+ };
  const json=(route,data,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(data)});
  await page.route('**/api/**', async route=>{
   const req=route.request(), path=new URL(req.url()).pathname;
@@ -30,12 +39,17 @@ async function setup(page) {
    const {evidence_id:id}=req.postDataJSON();
    if(id==='E03')return json(route,{detail:'invalid_session_stage'},409);
    const e={...session.case_public_state.evidence_options.find(e=>e.id===id),content:id==='E01'?{command:'已发送',grasp_success:false}:{planned_x_mm:0,actual_x_mm:70,delta_x_mm:70}};
-   session.released_evidence.push(e);session.allowed_actions=['inspect_evidence',session.hypotheses.length?'revise_hypothesis':'submit_hypothesis'];
+   session.released_evidence.push(e);
+   if(internalStage==='OBSERVE')internalStage='INVESTIGATE';
+   syncActions();
    return json(route,{evidence:e,session});
   }
   if(path.endsWith('/hypotheses')) {
+   if(internalStage==='INVESTIGATE')internalStage='TEST';
+   else if(internalStage==='TEST')internalStage='UPDATE';
+   else if(internalStage!=='UPDATE')return json(route,{detail:'invalid_session_stage'},409);
    const {hypothesis}=req.postDataJSON();session.hypotheses.push(hypothesis);session.current_hypothesis=hypothesis;session.public_stage='INVESTIGATING';
-   session.allowed_actions=['inspect_evidence','revise_hypothesis',...(session.hypotheses.length>1?['submit_diagnosis']:[])];return json(route,session);
+   syncActions();return json(route,session);
   }
   if(path.endsWith('/tutor')) {
    await new Promise(r=>setTimeout(r,200));return json(route,{tutor:{message:'请比较计划位置与实际测量值，再修正你的假设。',suggested_action:'inspect_evidence'},session,tutor_mode:'rule_fallback'});

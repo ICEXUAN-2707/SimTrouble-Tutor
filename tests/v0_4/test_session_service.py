@@ -110,6 +110,35 @@ class SessionServiceTests(unittest.TestCase):
             [event.action_type for event in snapshot.trace],
         )
 
+    def test_precollected_evidence_does_not_block_hypothesis_revision(self) -> None:
+        created = self.service.create("ST-001")
+        for evidence_id in ("E01", "E02", "E03"):
+            self.service.request_evidence(created.session_id, evidence_id)
+
+        initial = self.service.submit_hypothesis(
+            created.session_id,
+            "the gripper may not have retained the object",
+        )
+        initial_snapshot = self.repository.inspect(
+            created.session_id,
+            lambda aggregate: aggregate.session,
+        )
+        revised = self.service.submit_hypothesis(
+            created.session_id,
+            "the object pose is offset from the planned position",
+        )
+        revised_snapshot = self.repository.inspect(
+            created.session_id,
+            lambda aggregate: aggregate.session,
+        )
+
+        self.assertIs(DiagnosticStage.TEST, initial_snapshot.current_stage)
+        self.assertIn("revise_hypothesis", initial.allowed_actions)
+        self.assertNotIn("submit_diagnosis", initial.allowed_actions)
+        self.assertIs(DiagnosticStage.UPDATE, revised_snapshot.current_stage)
+        self.assertIn("submit_diagnosis", revised.allowed_actions)
+        self.assertEqual(2, len(revised.hypotheses))
+
     def test_invalid_stage_and_unknown_evidence_do_not_advance_stage(self) -> None:
         created = self.service.create("ST-001")
         with self.assertRaises(SessionStageConflictError):
