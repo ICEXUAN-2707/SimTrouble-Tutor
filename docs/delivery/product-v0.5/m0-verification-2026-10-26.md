@@ -61,8 +61,9 @@ npm.cmd run test:e2e:ci
 
 ## 尚未完成的门禁
 
-1. 远端 CI：Git fetch 成功，但 GitHub Actions REST 查询返回 HTTP 403；本机没有 `gh`。
-   不将无法读取的远端检查标为通过。
+1. 远端 CI：本轮提交 `8c7d320` 已推送，Product 工作流已触发。
+   匿名 REST 查询返回 HTTP 403；使用 Git 已保存凭据进行只读查询成功，当前检查运行中。
+   结果以 [GitHub Actions](https://github.com/ICEXUAN-2707/SimTrouble-Tutor/actions/runs/40293194897) 为准。
 2. 身份修复分支需要按现有 PR 审核流程合入 v0.5 Phase。
 3. v0.4 与 v0.5 进入 develop 时使用 merge 保留共享历史，不能使用旧报告中的 rebase 建议。
 4. M2：先冻结小型 SQLite 存储约定，再保存用户拥有的训练记录和已完成报告；
