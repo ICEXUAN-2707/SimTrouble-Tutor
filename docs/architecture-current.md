@@ -39,6 +39,7 @@ apps/training_api
   ├── main.py               FastAPI Scene / Session / Tutor / Diagnosis / Report routes
   ├── session_service.py    authoritative Session application commands
   ├── session_projector.py  learner-safe SessionView projection
+  ├── training_records.py   completed user-owned SessionView/Report in SQLite
   ├── auth/
   │     ├── models.py       strict Product v0.5 public identity models
   │     └── repository.py   versioned SQLite accounts and auth sessions
@@ -101,16 +102,20 @@ Diagnosis is accepted once after UPDATE; qualitative evaluation remains
 separate from versioned program scoring, and the resulting report contains all
 five dimensions. ST-001 Safety is explicitly `not_assessed`. The localized web
 workspace now integrates Evidence, Hypothesis, Tutor, Diagnosis and Report with
-the deterministic CAD scene. Sessions and reports are still process-local.
+the deterministic CAD scene. Active Sessions are process-local.
 Product v0.5 adds versioned SQLite storage for accounts, revocable
-authentication sessions and failed-login state only. New `/api/v0.5` training
+authentication sessions and failed-login state. M2 adds one table in that same
+file for completed user-owned training snapshots and reports. New `/api/v0.5` training
 Sessions are bound to the authenticated User ID; every Session, Tutor,
 Diagnosis and Report operation checks that owner before domain work. CSRF
 proof is required for authenticated writes. The legacy v0.4 anonymous surface
 cannot access an account-owned Session.
 
-Training Sessions, Reports and Tutor conversations are still process-local;
-account persistence does not imply durable learning history. Physical
+Unfinished training Sessions and Tutor conversations remain process-local.
+Completed records can be read through the existing owned Session/Report GET
+routes after restart. There is no new history UI or unfinished-session resume.
+The SQLite write runs inside the existing atomic completion callback, before
+the in-memory candidate is committed; failed writes leave diagnosis retryable. Physical
 simulation, multi-Case flow and the one-click launcher are not implemented.
 A real-provider smoke remains a credential-gated release check and is never
 run in CI.

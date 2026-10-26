@@ -46,6 +46,7 @@ from .session_service import (
     SessionStageConflictError,
 )
 from .tutor import TutorService, build_tutor_service
+from .training_records import TrainingRecordStore
 
 
 AUTH_COOKIE_NAME = "simtrouble_auth"
@@ -84,9 +85,11 @@ def create_app(
     scenes = repository or SceneRepository()
     sessions = session_service or SessionService()
     tutor = tutor_service or build_tutor_service(sessions)
-    diagnosis = diagnosis_service or build_diagnosis_service(sessions)
     authentication = authentication_store or AuthenticationStore()
     authentication.initialize()
+    diagnosis = diagnosis_service or build_diagnosis_service(
+        sessions, records=TrainingRecordStore(authentication.database_path)
+    )
     application = FastAPI(
         title="SimTrouble Tutor API",
         version="0.5.0",
@@ -352,7 +355,7 @@ def create_app(
     def get_owned_session(request: Request, session_id: str) -> SessionView:
         context = require_auth(request)
         try:
-            return sessions.get(session_id, user_id=context.user.user_id)
+            return diagnosis.get_session(session_id, user_id=context.user.user_id)
         except SessionNotFoundError as exc:
             raise HTTPException(status_code=404, detail="session_not_found") from exc
 

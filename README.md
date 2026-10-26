@@ -82,7 +82,7 @@ Product v0.5 candidate
 | 五维 Skill 评分 | T3 已实现；ST-001 Safety 因无可观测机会标记为 `not_assessed` |
 | LLM Tutor | T2B/T2C 代码闭环已实现；支持 DeepSeek、Qwen、Kimi 和 SiliconFlow 配置，真实 Key smoke 需在发布前人工执行 |
 | Mock / 真实物理仿真 | 确定性 Three.js 动画已实现；物理仿真不在当前 MVP |
-| 数据库与账号体系 | v0.5 候选已实现本地账号与认证会话；训练 Session/Report 仍保持进程内 |
+| 数据库与账号体系 | v0.5 候选含本地账号与认证会话；M2 将已完成训练记录及报告保存至 SQLite，进行中的训练仍在内存中 |
 
 当前权威基线与阶段规格：
 
@@ -147,6 +147,11 @@ npm.cmd run dev
 ~~~
 
 打开 `http://127.0.0.1:5174`，先注册本地账号，再进入训练工作台。默认认证数据库为仓库根目录下被 Git 忽略的 `var/auth.db`；可用 `SIMTROUBLE_AUTH_DB_PATH` 指向其他位置。HTTPS 部署必须设置 `SIMTROUBLE_COOKIE_SECURE=true`。
+
+M2 复用同一 SQLite 文件：登录用户完成训练时自动保存公开证据/假设快照及报告，
+启动时自动执行增量建表。重启后可用原账号和训练 Session ID 通过已有接口读取记录。
+本轮只做存储，不新增历史列表页面；刷新页面仍按原有行为创建新训练，未完成训练不恢复。
+范围与验收见 [M2 最小存储计划](specs/product/product-v0.5/M2_STORAGE.md)。
 
 不配置在线 Provider 时，Tutor API 会使用确定性规则回退。真实 Provider 调用仅从后端环境变量读取密钥。DeepSeek 示例：
 

@@ -221,6 +221,7 @@ class SessionService:
         build_report: Callable[[DiagnosisEvaluationContext], TrainingReportV04],
         *,
         user_id: str | None = None,
+        persist_completed: Callable[[SessionView, TrainingReportV04], None] | None = None,
     ) -> DiagnosisCompletion:
         def command(aggregate: CaseSession) -> DiagnosisCompletion:
             self._guard_owner(aggregate, user_id)
@@ -254,6 +255,8 @@ class SessionService:
                 rubric_version=report.rubric_version,
             )
             aggregate.transition_to(DiagnosticStage.FINISH)
+            if persist_completed is not None:
+                persist_completed(self._projector.project(aggregate), report)
             return DiagnosisCompletion(
                 submitted_session=submitted_session,
                 report=report,

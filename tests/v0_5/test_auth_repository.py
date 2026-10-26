@@ -58,7 +58,7 @@ class AuthenticationStoreTests(unittest.TestCase):
                 for value in row
             )
             version = connection.execute("PRAGMA user_version").fetchone()[0]
-        self.assertEqual(2, version)
+        self.assertEqual(3, version)
         self.assertNotIn("correct-horse", values)
         self.assertNotIn(issued.token, values)
         self.assertNotIn(issued.csrf_token, values)
@@ -111,7 +111,7 @@ class AuthenticationStoreTests(unittest.TestCase):
                 "SELECT account_key, is_known, updated_at FROM login_failures "
                 "ORDER BY account_key"
             ).fetchall()
-        self.assertEqual(2, version)
+        self.assertEqual(3, version)
         self.assertEqual(
             [
                 ("known01", 1, self.now),
@@ -168,7 +168,7 @@ class AuthenticationStoreTests(unittest.TestCase):
                 "SELECT 1 FROM login_failures "
                 "WHERE account_key = 'stale-unknown'"
             ).fetchone()
-        self.assertEqual(2, version)
+        self.assertEqual(3, version)
         self.assertEqual(UNKNOWN_LOGIN_FAILURE_CAP, unknown_count)
         self.assertEqual((1,), known)
         self.assertIsNone(stale)
