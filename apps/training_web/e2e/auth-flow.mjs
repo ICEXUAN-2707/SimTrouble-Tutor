@@ -23,11 +23,17 @@ export async function verifyAuthenticationFlow(browser, baseUrl) {
   try {
     const credentials = await registerAndEnter(page, baseUrl, "auth");
     assert.equal(await page.locator("#signed-user").textContent(), "测试学员");
+    const navigation = page.waitForEvent("framenavigated");
     await page.locator("#logout-button").click();
+    await navigation;
+    await page.waitForLoadState("load");
     await page.locator("#auth-shell").waitFor({ state: "visible" });
     await page.locator("#auth-username").fill(credentials.username);
     await page.locator("#auth-password").fill(credentials.password);
     await page.locator("#auth-submit").click();
+    await page.locator("#app").waitFor({ state: "visible" });
+    assert.equal(await page.locator("#signed-user").textContent(), "测试学员");
+    await page.reload({ waitUntil: "load" });
     await page.locator("#app").waitFor({ state: "visible" });
     assert.equal(await page.locator("#signed-user").textContent(), "测试学员");
   } finally {
@@ -40,8 +46,8 @@ export async function verifyAuthenticationExpiryClearsState(browser, baseUrl) {
   const page = await context.newPage();
   try {
     await registerAndEnter(page, baseUrl, "expired");
-    await page.locator(".evidence-card").first().waitFor();
     await page.locator('[data-step="evidence"]').click();
+    await page.locator(".evidence-card").first().waitFor();
     await page.locator("[data-evidence-id='E01']").click();
     await page.locator("#learning-progress").filter({ hasText: "1 / 3" }).waitFor();
     await page.locator('[data-step="hypothesis"]').click();
@@ -71,9 +77,9 @@ export async function verifyAuthenticationExpiryClearsState(browser, baseUrl) {
     assert.equal(await page.locator("#signed-user").textContent(), "");
     assert.equal(await page.locator("#session-code").textContent(), "尚未创建");
     assert.equal(await page.locator("#session-code").getAttribute("title"), null);
-    assert.equal(await page.locator("#evidence-options").children().count(), 0);
+    assert.equal(await page.locator("#evidence-options > *").count(), 0);
     assert.equal(await page.locator("#hypothesis-input").inputValue(), "");
-    assert.equal(await page.locator("#report-content").children().count(), 0);
+    assert.equal(await page.locator("#report-content > *").count(), 0);
     assert.equal(
       await page.evaluate(() => document.cookie.includes("simtrouble_csrf=")),
       false,

@@ -100,7 +100,7 @@ export async function verifyDiagnosisReportFlow(page) {
 export async function verifyPrecollectedEvidenceUnlock(browser, baseUrl) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   try {
-    await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
+    await registerAndEnter(page, baseUrl, "precollected");
     await page.locator("#tutor-status").filter({ hasText: "可用" }).waitFor({ state: "attached" });
     await page.locator('[data-step="evidence"]').click();
     for (const evidenceId of ["E01", "E02", "E03"]) {
