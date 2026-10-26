@@ -1,7 +1,10 @@
 import { chromium } from "playwright-core";
 import { verifyAuthenticationExpiryClearsState } from "./auth-flow.mjs";
 
-const browser = await chromium.launch({ headless: true });
+const browserChannel = process.env.SIMTROUBLE_BROWSER_CHANNEL ?? "bundled";
+const launchOptions = { headless: true };
+if (browserChannel !== "bundled") launchOptions.channel = browserChannel;
+const browser = await chromium.launch(launchOptions);
 try {
   await verifyAuthenticationExpiryClearsState(
     browser,

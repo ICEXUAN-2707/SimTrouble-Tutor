@@ -11,6 +11,7 @@ import {
   verifyAssessmentScenarios,
   verifyDiagnosisErrors,
   verifyDiagnosisReportFlow,
+  verifyPrecollectedEvidenceUnlock,
   verifyResponsiveDiagnosisFlows,
 } from "./diagnosis-report-flow.mjs";
 

@@ -2,7 +2,7 @@ name: Product v0.4
 
 on:
   push:
-    branches: [main, develop, "phase/product-v0.4", "phase/product-v0.5-identity-persistence"]
+    branches: [main, develop, "phase/product-v0.4", "phase/product-v0.5-identity-persistence", "task/product-v0.5-m0-*"]
   pull_request:
 
 permissions:
@@ -41,6 +41,10 @@ jobs:
       - name: Type-check and build web application
         working-directory: apps/training_web
         run: npm run build
+
+      - name: Audit web dependencies
+        working-directory: apps/training_web
+        run: npm audit --audit-level=high
 
       - name: Install Playwright Chromium
         working-directory: apps/training_web
