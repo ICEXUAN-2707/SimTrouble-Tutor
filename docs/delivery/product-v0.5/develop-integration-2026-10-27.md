@@ -6,8 +6,9 @@
 - v0.5 Phase: `21ebf8d592a55bc14f7409fd895874512e272b2f`, including M0 #24, M2 #25 and M1 #26.
 - Integration workspace: `.tmp/v05-develop-integration`; original workspace changes retained.
 - v0.4-to-develop PR: https://github.com/ICEXUAN-2707/SimTrouble-Tutor/pull/28
-- Remote v0.4-to-develop merge waits for the product owner's human RC verdict; automated evidence does not substitute for that verdict.
-- The local candidate first prepares the v0.4 changes. Once PR #28 merges, merge the resulting develop commit into this candidate before promoting it into the v0.5 Phase and then develop.
+- Product owner explicitly confirmed human RC acceptance PASS in the project conversation on 2026-10-27 ("可以，验收通过"). Browser version was not supplied.
+- PR #28 merged v0.4 into develop as `24f3f892d0d97a19e96e619482345597c179d1f9` after current-head CI passed.
+- Merged the resulting develop into this candidate as `29de344`; the merge introduced no additional file-content changes.
 
 ## Resolutions
 
@@ -29,9 +30,8 @@
 
 ## Pending gates
 
-1. Human RC verdict and successful PR #28 checks, then v0.4 into develop.
-2. Merge that develop into the candidate, complete current-head CI/review, and integrate into v0.5 Phase.
-3. Current-head v0.5 Phase checks and PR review, then merge v0.5 into develop.
-4. Verify final develop ancestry and post-merge checks.
+1. Complete current-head CI/review of alignment PR #29, then integrate into v0.5 Phase.
+2. Current-head v0.5 Phase checks and PR review, then merge v0.5 into develop.
+3. Verify final develop ancestry and post-merge checks.
 
 Production hosting, HTTPS, backup/restore, release/main promotion and additional features are outside this integration task.
