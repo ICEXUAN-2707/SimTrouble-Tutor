@@ -2,8 +2,7 @@
 
 > Base dependency: Product v0.4 must pass its Phase gate before this Phase may
 > enter `develop`.
-> Implementation status: T0-T4 code and local verification complete; stacked
-> Phase review and Product v0.4 base integration remain open.
+> Implementation status: M0 and M2 have merged into the Product v0.5 Phase; M1 local launcher implementation is complete. Browser acceptance is recorded in the M1 delivery note. Product v0.4 integration remains the prerequisite before this Phase can enter `develop`.
 
 ## T0 — Contract and threat boundary
 
@@ -69,5 +68,16 @@ No history list, new route, UI, export, analytics, unfinished-session recovery,
 Tutor conversation persistence, ORM or additional database service.
 Implementation and local verification complete: seven new M2 tests, all 163
 Python tests, production build and authenticated Edge browser E2E pass.
-Remote CI and review remain pending.
-Merge order stays M0 → M2 → M1; the M2 task is stacked on the verified M0 branch.
+PR #24 (M0) and PR #25 (M2) have merged into the Product v0.5 Phase. This does not bypass the Product v0.4 to `develop` ordering requirement.
+
+## T6 / M1 — Windows launcher and configuration preflight
+
+See [M1_LOCAL_LAUNCHER.md](M1_LOCAL_LAUNCHER.md).
+
+- Add a double-click Windows entry and a small Python launcher.
+- Check local runtimes, Vite packages, existing Provider configuration and fixed ports.
+- Pass Provider secrets to the API process only; start API and Vite and wait for health.
+- Clean up only the two services created by this launcher.
+- Keep the existing credential-gated DeepSeek smoke as a separate, explicit command.
+
+No dependency installation, production deployment, new API, frontend flow or database work. M0 and M2 are merged. Launcher preflight and startup succeeded; browser acceptance was completed by the user. Human UAT and existing deployment acceptance remain.
