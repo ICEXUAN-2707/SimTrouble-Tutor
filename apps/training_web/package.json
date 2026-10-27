@@ -1,12 +1,13 @@
 {
   "name": "simtrouble-training-web",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.5.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
     "test:e2e": "node e2e/smoke.mjs",
+    "test:auth-expiry": "node e2e/auth-expiry-ci.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "test:ui": "node e2e/ui-fixture-flow.mjs",
     "test:e2e:ci": "node e2e/smoke-ci.mjs"

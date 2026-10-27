@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { chromium } from "playwright-core";
+import { registerAndEnter } from "./auth-flow.mjs";
 import { verifyTutorDeliveryScenarios } from "./tutor-scenarios.mjs";
 import { verifyLearningFlow } from "./learning-flow.mjs";
 import { verifyDiagnosisReportFlow, verifyPrecollectedEvidenceUnlock } from "./diagnosis-report-flow.mjs";
@@ -14,8 +15,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
-  await page.locator("#loading-state").waitFor({ state: "hidden" });
+  await registerAndEnter(page, baseUrl, "smoke");
   await page.locator("#tutor-status").filter({ hasText: "可用" }).waitFor({ state: "attached" });
   assert.equal(await page.locator("#case-state").textContent(), "准备就绪");
   assert.equal(await page.locator("#fault-callout").isHidden(), true);
@@ -35,8 +35,7 @@ try {
   await verifyTutorDeliveryScenarios(browser, baseUrl);
 
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
-  await mobile.goto(baseUrl, { waitUntil: "domcontentloaded" });
-  await mobile.locator("#loading-state").waitFor({ state: "hidden" });
+  await registerAndEnter(mobile, baseUrl, "mobile");
   assert.equal(await mobile.locator("#play-button").isVisible(), true);
   assert.equal(await mobile.locator("#cad-viewport canvas").isVisible(), true);
   const mobileWidth = await mobile.evaluate(() => ({

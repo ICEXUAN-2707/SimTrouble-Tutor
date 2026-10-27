@@ -2,7 +2,7 @@
 
 > Status: implemented
 > Authority: explanatory; Contracts and Phase Specs remain normative
-> Applies to: Product v0.4 T4A/T4B integration candidate
+> Applies to: Product v0.5 identity candidate stacked on Product v0.4 T4A/T4B
 
 ## Implemented modules
 
@@ -39,6 +39,10 @@ apps/training_api
   ├── main.py               FastAPI Scene / Session / Tutor / Diagnosis / Report routes
   ├── session_service.py    authoritative Session application commands
   ├── session_projector.py  learner-safe SessionView projection
+  ├── training_records.py   completed user-owned SessionView/Report in SQLite
+  ├── auth/
+  │     ├── models.py       strict Product v0.5 public identity models
+  │     └── repository.py   versioned SQLite accounts and auth sessions
   ├── evaluation/
   │     ├── evaluator.py    qualitative post-submission findings
   │     ├── scoring.py      versioned deterministic five-dimension scoring
@@ -90,7 +94,7 @@ provider selected by the server-side registry, but defaults to a deterministic
 rule fallback. The LLM phrases a program-selected teaching decision and cannot
 mutate Session state or calculate final scores. Provider configuration errors,
 missing credentials and unsafe output fail closed to the same rule Tutor.
-Conversation storage and Sessions remain process-local.
+Conversation storage and authoritative training Sessions remain process-local.
 
 Tutor frontend binding, approved request/delivery/fallback Trace events,
 per-Session serialization and public-safe delivery metrics are implemented.
@@ -98,10 +102,23 @@ Diagnosis is accepted once after UPDATE; qualitative evaluation remains
 separate from versioned program scoring, and the resulting report contains all
 five dimensions. ST-001 Safety is explicitly `not_assessed`. The localized web
 workspace now integrates Evidence, Hypothesis, Tutor, Diagnosis and Report with
-the deterministic CAD scene. Sessions and reports are still process-local.
-Persistence, authentication, physical simulation, multi-Case flow and the
-one-click launcher are not implemented yet. A real-provider smoke remains a
-credential-gated release check and is never run in CI.
+the deterministic CAD scene. Active Sessions are process-local.
+Product v0.5 adds versioned SQLite storage for accounts, revocable
+authentication sessions and failed-login state. M2 adds one table in that same
+file for completed user-owned training snapshots and reports. New `/api/v0.5` training
+Sessions are bound to the authenticated User ID; every Session, Tutor,
+Diagnosis and Report operation checks that owner before domain work. CSRF
+proof is required for authenticated writes. The legacy v0.4 anonymous surface
+cannot access an account-owned Session.
+
+Unfinished training Sessions and Tutor conversations remain process-local.
+Completed records can be read through the existing owned Session/Report GET
+routes after restart. There is no new history UI or unfinished-session resume.
+The SQLite write runs inside the existing atomic completion callback, before
+the in-memory candidate is committed; failed writes leave diagnosis retryable. Physical
+simulation, multi-Case flow and the one-click launcher are not implemented.
+A real-provider smoke remains a credential-gated release check and is never
+run in CI.
 
 ## Test structure
 
@@ -112,4 +129,5 @@ credential-gated release check and is never run in CI.
 - `tests/phase3_integration/`: explicit ST-001 Core path.
 - `tests/demo/`: ST-001 HTTP end-to-end path and real subprocess startup smoke.
 - `tests/v0_4/`: Scene, Session, Tutor, provider-failure, Diagnosis/Report behavior and contract parity.
+- `tests/v0_5/`: identity schemas, SQLite storage, CSRF, expiry, rate limiting and cross-user ownership.
 - `apps/training_web/e2e/`: deterministic CAD playback, learner workflow, Tutor, Diagnosis/Report, recovery and responsive browser coverage.

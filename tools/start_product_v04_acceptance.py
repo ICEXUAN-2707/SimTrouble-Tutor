@@ -1,4 +1,4 @@
-"""Build and run the local Product v0.4 browser acceptance service."""
+"""Build and run the local product browser acceptance service."""
 
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ WEB_HOST = "127.0.0.1"
 WEB_PORT = 5174
 API_URL = f"http://{API_HOST}:{API_PORT}"
 WEB_URL = f"http://{WEB_HOST}:{WEB_PORT}"
-PRODUCT_VERSION = "0.4.0"
+PRODUCT_VERSION = "0.5.0"
 LOG_ROOT = ROOT / "var" / "acceptance"
 
 LLM_KEYS = frozenset(
@@ -152,7 +152,7 @@ def find_runtime() -> tuple[Path, str, Path, Path]:
     )
     if not python_executable.is_file():
         raise LauncherError(
-            "Project Python environment is missing. Follow the Product v0.4 setup in README.md."
+            "Project Python environment is missing. Follow the setup in README.md."
         )
     node_executable = shutil.which("node")
     if node_executable is None:
@@ -228,7 +228,7 @@ def run_frontend_build(node_executable: str, vite_entry: Path, tsc_entry: Path,
 
     built_page = WEB_ROOT / "dist" / "index.html"
     if not built_page.is_file() or b'id="app"' not in built_page.read_bytes():
-        raise LauncherError("Production build did not produce the Product v0.4 workspace page.")
+        raise LauncherError("Production build did not produce the training workspace page.")
 
 
 def redact_log_line(line: str, secret_values: tuple[str, ...]) -> str:
@@ -375,7 +375,7 @@ def run_launcher(args: argparse.Namespace, output: TextIO = sys.stdout) -> int:
     print("[OK] API and Preview ports are available.", file=output)
     print(f"[INFO] {summary}", file=output)
     if args.check_only:
-        print("[OK] Product v0.4 acceptance preflight passed.", file=output)
+        print(f"[OK] Product v{PRODUCT_VERSION} acceptance preflight passed.", file=output)
         return 0
 
     run_frontend_build(node_executable, vite_entry, tsc_entry, frontend_environment)
@@ -420,7 +420,7 @@ def run_launcher(args: argparse.Namespace, output: TextIO = sys.stdout) -> int:
             (),
         )
         wait_until_ready("Vite Preview", web_is_ready, web_process, args.startup_timeout)
-        print(f"[READY] Product v0.4 acceptance workspace: {WEB_URL}", file=output, flush=True)
+        print(f"[READY] Product v{PRODUCT_VERSION} acceptance workspace: {WEB_URL}", file=output, flush=True)
         print(f"[INFO] Logs: {api_log.relative_to(ROOT)}; {web_log.relative_to(ROOT)}", file=output)
         if not args.no_browser:
             try:

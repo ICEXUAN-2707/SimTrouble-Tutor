@@ -67,13 +67,21 @@ class AcceptanceLauncherTests(unittest.TestCase):
         responses = iter(
             (
                 b'<html><div id="app"></div></html>',
-                b'{"status":"ok","version":"0.4.0"}',
+                b'{"status":"ok","version":"0.5.0"}',
             )
         )
         original = launcher._read_local
         try:
             launcher._read_local = lambda _url: next(responses)  # type: ignore[assignment]
             self.assertTrue(launcher.web_is_ready())
+        finally:
+            launcher._read_local = original
+
+    def test_readiness_rejects_a_stale_v04_service(self) -> None:
+        original = launcher._read_local
+        try:
+            launcher._read_local = lambda _url: b'{"status":"ok","version":"0.4.0"}'
+            self.assertFalse(launcher.api_is_ready())
         finally:
             launcher._read_local = original
 

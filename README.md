@@ -29,7 +29,7 @@ Simulation          Mock Adapter / later Gazebo or Isaac Adapter
 - Skill Engine 使用可解释规则，LLM 不直接决定最终分数；
 - Core 不依赖具体仿真 SDK，真实仿真只能通过冻结的 Adapter 边界接入。
 
-当前实际实现包含 Phase 1–3 的契约与 Core、隔离的初版 Demo，以及 Product v0.4 的 CAD、Session、受约束 Tutor 与确定性诊断报告后端：
+当前实际实现包含 Phase 1–3 的契约与 Core、隔离的初版 Demo、Product v0.4 学习闭环，以及已合入 v0.5 Phase 的身份与训练记录能力：
 
 ```text
 contracts / data
@@ -47,6 +47,11 @@ Product v0.4
   ├─ apps/training_api/tutor（Policy / Provider Registry / Output Guard / Rule fallback）
   ├─ apps/training_api/evaluation（Evaluator / Skill Engine / Report Builder）
   └─ contracts/v0.4（Tutor / Diagnosis / Evaluator / Report）
+       ↑
+Product v0.5 Phase（M0/M2 已合入）
+  ├─ apps/training_api/auth（SQLite Account / Auth Session / CSRF）
+  ├─ /api/v0.5（认证训练 Session 与所有权校验）
+  └─ apps/training_web（登录 / 注册 / 退出）
 ```
 
 当前架构与目标架构分别见 [Current Architecture](docs/architecture-current.md) 和 [Target Architecture](docs/architecture-target.md)。
@@ -63,7 +68,9 @@ Product v0.4
 - Product v0.4 T2B：Tutor 前端、同会话串行、公开安全 Trace、运行指标与泄漏回退已实现；真实 Key smoke 是发布前人工检查。
 - Product v0.4 T2C：DeepSeek Responses 与 OpenAI-compatible Provider Registry、配置容错和 Case-aware Output Guard 已实现。
 - Product v0.4 T3：一次性 Diagnosis、定性 Evaluator、确定性五维评分和 Report 后端已实现。
-- Product v0.4 T4A/T4B：CAD、Evidence、Hypothesis、Tutor、Diagnosis、Report 已整合到中文响应式工作台；M3 验收启动器、生产 Preview 浏览器 smoke、全量 Python 回归、依赖审计和一次真实 DeepSeek smoke 已在任务分支通过；产品负责人 RC 浏览器验收与 Phase→develop 门禁仍待完成。
+- Product v0.4 T4A/T4B：CAD、Evidence、Hypothesis、Tutor、Diagnosis、Report 已整合到中文响应式工作台；生产 Preview 浏览器 smoke、全量 Python 回归、依赖审计和真实 DeepSeek smoke 已通过。
+- Product v0.5 M0/M2：认证边界与用户已完成训练记录已合入 v0.5 Phase；Phase 仍须遵守 v0.4 → develop 的基线顺序。
+- Product v0.5 M1：Windows 本地启动器已实现；启动预检通过，用户完成浏览器本地验收。当前 Tutor 按配置运行规则回退，真实 LLM 问答仍需本地凭据进行独立验收。
 
 | 能力 | 当前事实 |
 |---|---|
@@ -76,7 +83,7 @@ Product v0.4
 | 五维 Skill 评分 | T3 已实现；ST-001 Safety 因无可观测机会标记为 `not_assessed` |
 | LLM Tutor | T2B/T2C 代码闭环已实现；支持 DeepSeek、Qwen、Kimi 和 SiliconFlow 配置，真实 Key smoke 需在发布前人工执行 |
 | Mock / 真实物理仿真 | 确定性 Three.js 动画已实现；物理仿真不在当前 MVP |
-| 数据库与账号体系 | 未实现 |
+| 数据库与账号体系 | v0.5 Phase 保存本地账号、认证会话和用户已完成训练记录；进行中的训练仍在内存中 |
 
 当前权威基线与阶段规格：
 
@@ -110,6 +117,10 @@ SimTrouble_FreezePack_v0.2/   冻结的项目治理与技术边界
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe -B -m unittest discover -s tests -p 'test_*.py' -v
+Set-Location apps\training_web
+npm.cmd ci
+npm.cmd run build
+npm.cmd audit
 ```
 
 ## 运行初版 Demo
@@ -120,7 +131,34 @@ python -m venv .venv
 
 默认仅监听 `http://127.0.0.1:8000`。该 Demo 使用进程内匿名会话、确定性规则 Tutor 和 ST-001 专用判定；它不会推进正式诊断阶段，也不提供五维评分、在线 LLM、物理仿真或持久化。
 
-## 运行 Product v0.4
+## 运行 Product v0.5 本地版
+
+首次使用前，在仓库根目录创建本地 Python 环境并安装仓库与前端依赖：
+
+~~~powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+Set-Location apps\training_web
+npm.cmd ci
+Set-Location ..\..
+~~~
+
+复制 `.env.example` 到 Git 忽略的 `.env.local`。默认配置关闭在线 Tutor，规则 Tutor 无需密钥即可使用。
+要启用 Provider，可在 `.env.local` 配置开关、Provider 和对应密钥。当前终端的环境变量优先于文件配置。
+启动前可用只读预检检查依赖、配置和端口：
+
+~~~powershell
+.\.venv\Scripts\python.exe -B tools\start_product.py --check-only
+~~~
+
+双击仓库根目录的 `START_SIMTROUBLE.cmd`，或在 PowerShell 运行：
+
+~~~powershell
+.\.venv\Scripts\python.exe -B tools\start_product.py
+~~~
+
+启动器会开启 API 和 Web 服务并打开页面。按 Ctrl+C 只会停止本次启动的服务。
+固定端口被占用时先关闭对应进程再重试。启动摘要会显示 Provider 状态，但不显示密钥。
 
 在仓库根目录启动 API：
 
@@ -136,7 +174,14 @@ npm.cmd ci
 npm.cmd run dev
 ~~~
 
-打开 `http://127.0.0.1:5174`。不配置在线 Provider 时，Tutor API 会使用确定性规则回退。真实 Provider 调用仅从后端环境变量读取密钥。DeepSeek 示例：
+打开 `http://127.0.0.1:5174`，先注册本地账号，再进入训练工作台。默认认证数据库为仓库根目录下被 Git 忽略的 `var/auth.db`；可用 `SIMTROUBLE_AUTH_DB_PATH` 指向其他位置。HTTPS 部署必须设置 `SIMTROUBLE_COOKIE_SECURE=true`。
+
+M2 复用同一 SQLite 文件：登录用户完成训练时自动保存公开证据/假设快照及报告，
+启动时自动执行增量建表。重启后可用原账号和训练 Session ID 通过已有接口读取记录。
+本轮只做存储，不新增历史列表页面；刷新页面仍按原有行为创建新训练，未完成训练不恢复。
+范围与验收见 [M2 最小存储计划](specs/product/product-v0.5/M2_STORAGE.md)。
+
+不配置在线 Provider 时，Tutor API 会使用确定性规则回退。真实 Provider 调用仅从后端环境变量读取密钥。DeepSeek 示例：
 
 ~~~powershell
 $env:SIMTROUBLE_LLM_ENABLED = "true"
