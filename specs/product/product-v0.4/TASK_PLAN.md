@@ -13,10 +13,10 @@
 - T2C provider registry, configuration resilience and Case-aware output guard: complete on the integration candidate.
 - T3 Diagnosis, Evaluator, deterministic scoring and Report: implementation complete on the integration candidate.
 - T4A/T4B integrated learner workflow and localized product UI: implementation complete on the integration candidate.
-- M1 Step-4 diagnosis unlock: regression fix complete on the repair candidate;
+- M1 Step-4 diagnosis unlock: regression fix merged into the Phase;
   Evidence may be collected before the initial Hypothesis, while one revised
   Hypothesis remains mandatory before Diagnosis.
-- T4 release gate: open; one-click launch, credential-gated provider smoke, dependency audit and Phase integration remain.
+- T4 release gate: launcher, automated Phase checks, dependency audit and one explicit DeepSeek smoke pass on the M3 task branch; task/Phase review, product-owner RC browser acceptance and Phase-to-develop integration remain.
 
 ## T0 — Baseline
 
