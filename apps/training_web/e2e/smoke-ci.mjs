@@ -6,6 +6,7 @@ import {
   verifyAssessmentScenarios,
   verifyDiagnosisErrors,
   verifyDiagnosisReportFlow,
+  verifyPrecollectedEvidenceUnlock,
   verifyResponsiveDiagnosisFlows,
 } from "./diagnosis-report-flow.mjs";
 
@@ -82,6 +83,7 @@ try {
   assert.deepEqual(visibleEnglish, []);
   assert.deepEqual(errors, []);
   await page.close();
+  await verifyPrecollectedEvidenceUnlock(browser, baseUrl);
   await verifyTutorDeliveryScenarios(browser, baseUrl);
   await verifyAssessmentScenarios(browser, baseUrl);
   await verifyDiagnosisErrors(browser, baseUrl);

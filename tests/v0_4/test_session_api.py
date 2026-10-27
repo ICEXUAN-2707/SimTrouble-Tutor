@@ -193,6 +193,44 @@ class SessionApiTests(unittest.IsolatedAsyncioTestCase):
             "diagnosis_already_submitted", repeated.json()["detail"]
         )
 
+    async def test_precollected_evidence_can_reach_diagnosis(self) -> None:
+        created = (await self.client.post(
+            "/api/v0.4/sessions",
+            json={"case_id": "ST-001"},
+        )).json()
+        session_id = created["session_id"]
+        for evidence_id in ("E01", "E02", "E03"):
+            response = await self.client.post(
+                f"/api/v0.4/sessions/{session_id}/evidence",
+                json={"evidence_id": evidence_id},
+            )
+            self.assertEqual(200, response.status_code)
+
+        initial = await self.client.post(
+            f"/api/v0.4/sessions/{session_id}/hypotheses",
+            json={"hypothesis": "The gripper may not have retained the object."},
+        )
+        revised = await self.client.post(
+            f"/api/v0.4/sessions/{session_id}/hypotheses",
+            json={"hypothesis": "The object pose differs from the plan."},
+        )
+
+        self.assertEqual(200, initial.status_code)
+        self.assertNotIn("submit_diagnosis", initial.json()["allowed_actions"])
+        self.assertEqual(200, revised.status_code)
+        self.assertIn("submit_diagnosis", revised.json()["allowed_actions"])
+
+        diagnosis = await self.client.post(
+            f"/api/v0.4/sessions/{session_id}/diagnosis",
+            json={
+                "contract_version": "0.4.0",
+                "diagnosis_type": "object_pose_mismatch",
+                "reasoning": "The precollected pose evidence supports this diagnosis.",
+                "cited_evidence_ids": ["E01", "E02"],
+            },
+        )
+        self.assertEqual(202, diagnosis.status_code)
+
     async def test_http_report_and_diagnosis_errors_are_stable(self) -> None:
         created = (await self.client.post(
             "/api/v0.4/sessions",
