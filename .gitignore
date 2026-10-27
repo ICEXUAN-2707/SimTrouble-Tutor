@@ -13,4 +13,5 @@ node_modules/
 dist/
 /.tmp/
 /zjh/
+/var/acceptance/
 /学生卡.jpg

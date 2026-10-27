@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { chromium } from "playwright-core";
 import { verifyTutorDeliveryScenarios } from "./tutor-scenarios.mjs";
 import { verifyLearningFlow } from "./learning-flow.mjs";
-import { verifyDiagnosisReportFlow } from "./diagnosis-report-flow.mjs";
+import { verifyDiagnosisReportFlow, verifyPrecollectedEvidenceUnlock } from "./diagnosis-report-flow.mjs";
 
 const browser = await chromium.launch({
   ...(process.env.SIMTROUBLE_BROWSER_CHANNEL ? { channel: process.env.SIMTROUBLE_BROWSER_CHANNEL } : {}),
@@ -31,6 +31,7 @@ try {
   await verifyLearningFlow(page);
   await verifyDiagnosisReportFlow(page);
   assert.deepEqual(errors, []);
+  await verifyPrecollectedEvidenceUnlock(browser, baseUrl);
   await verifyTutorDeliveryScenarios(browser, baseUrl);
 
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
