@@ -1,4 +1,4 @@
-﻿# Product v0.5 M1 delivery note
+# Product v0.5 M1 delivery note
 
 Date: 2026-10-27
 Branch: `task/product-v0.5-m1-launcher`
@@ -19,7 +19,9 @@ Base: Product v0.5 Phase commit `538c9ce` (M0 and M2 merged)
 - Launcher started API and Vite successfully and reported the local training page ready.
 - User completed browser acceptance and reported that all flows except LLM smart Q&A were acceptable.
 - Launcher startup reported `llm_disabled`; this run used deterministic rule fallback and did not exercise a real LLM provider. No API key was requested, printed, or persisted by the launcher.
-- The full automated Playwright smoke produced no output while waiting and was interrupted; it is not counted as passed.
+- Python regression passed: 163 tests. Frontend type-check/build passed; build emitted only the existing >500 kB chunk-size warning. npm audit reported 0 vulnerabilities.
+- CI Playwright smoke (`e2e/smoke-ci.mjs`) passed the training, report, auth, Tutor mock/fallback, and 390px responsive flows.
+- An earlier broader local smoke invocation was interrupted while waiting; the prescribed CI smoke subsequently completed successfully.
 
 ## Remaining ordered work
 
