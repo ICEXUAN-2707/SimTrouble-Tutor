@@ -68,7 +68,7 @@ Product v0.5 Phase（M0/M2 已合入）
 - Product v0.4 T2B：Tutor 前端、同会话串行、公开安全 Trace、运行指标与泄漏回退已实现；真实 Key smoke 是发布前人工检查。
 - Product v0.4 T2C：DeepSeek Responses 与 OpenAI-compatible Provider Registry、配置容错和 Case-aware Output Guard 已实现。
 - Product v0.4 T3：一次性 Diagnosis、定性 Evaluator、确定性五维评分和 Report 后端已实现。
-- Product v0.4 T4A/T4B：CAD、Evidence、Hypothesis、Tutor、Diagnosis、Report 已整合到中文响应式工作台。
+- Product v0.4 T4A/T4B：CAD、Evidence、Hypothesis、Tutor、Diagnosis、Report 已整合到中文响应式工作台；生产 Preview 浏览器 smoke、全量 Python 回归、依赖审计和真实 DeepSeek smoke 已通过。
 - Product v0.5 M0/M2：认证边界与用户已完成训练记录已合入 v0.5 Phase；Phase 仍须遵守 v0.4 → develop 的基线顺序。
 - Product v0.5 M1：Windows 本地启动器已实现；启动预检通过，用户完成浏览器本地验收。当前 Tutor 按配置运行规则回退，真实 LLM 问答仍需本地凭据进行独立验收。
 
@@ -188,6 +188,43 @@ $env:SIMTROUBLE_LLM_ENABLED = "true"
 $env:SIMTROUBLE_LLM_PROVIDER = "deepseek"
 $env:DEEPSEEK_API_KEY = "替换成自己的Key"
 $env:SIMTROUBLE_LLM_MODEL = "deepseek-flash"
+~~~
+
+### Product v0.4 浏览器验收
+
+首次使用时在仓库根目录准备 Python 和 Web 依赖，并建立仅本机使用的配置文件：
+
+~~~powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+Set-Location apps\training_web
+npm.cmd ci
+Set-Location ..\..
+Copy-Item .env.example .env.local
+~~~
+
+按需编辑 `.env.local` 启用 Tutor Provider。默认关闭时使用规则回退。先预检：
+
+~~~powershell
+.\.venv\Scripts\python.exe -B tools\start_product_v04_acceptance.py --check-only
+~~~
+
+双击 `START_PRODUCT_V04_ACCEPTANCE.cmd`，或运行该 Python 启动器。验收服务先执行
+TypeScript 检查和生产构建，再启动 FastAPI 与 Vite Preview；浏览器访问
+`http://127.0.0.1:5174`。按 Ctrl+C 只关闭本启动器创建的服务。日志写入被 Git
+忽略的 `var/acceptance/logs/`，并会遮盖密钥字段。
+
+CI 浏览器 smoke 可在无真实 Provider 凭据时运行；它会对生产 Preview 执行登录、训练、报告、
+Tutor 模拟响应与回退场景：
+
+~~~powershell
+.\.venv\Scripts\python.exe -B tools\start_product_v04_acceptance.py --ci-smoke --no-browser
+~~~
+
+真实 DeepSeek smoke 是单独的显式动作，从本地 `.env.local` 读取配置，不会自动调用：
+
+~~~powershell
+.\.venv\Scripts\python.exe -B tools\deepseek_tutor_smoke.py
 ~~~
 
 详细学习材料见 [LLM Tutor + DeepSeek 零基础教学手册](docs/guides/llm-tutor-deepseek-beginner-guide.md)。
