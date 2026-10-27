@@ -29,6 +29,27 @@ tag v0.x.x
 - Phase 分支完成全量阶段集成测试和验收后，才能 PR 到 `develop`；
 - 任务分支不得直接进入 `develop`、`integration/*`、`release/*` 或 `main`。
 
+### 1.1 初版 Demo 预发布例外（2026-10-08 批准）
+
+在 Phase 4–8 完成前，允许建立一次范围受限的初版 Demo 预发布线：
+
+```text
+task/demo-v0.1-*
+    ↓
+phase/demo-v0.1-integration
+    ↓
+develop
+```
+
+该例外只允许：
+
+- 整理仓库与架构文档；
+- 迁移 ST-001 静态演示外壳并复用官方 Core；
+- 使用规则 Tutor、内存会话和 Demo-only 诊断判定；
+- 添加 ST-001 HTTP E2E 与启动烟测。
+
+该例外不代表 Phase 4–8 已完成，不得实现 Skill、LangGraph/LLM、正式 Next.js/FastAPI、Mock/真实仿真、持久化或扩展 Case。预发布能力必须在独立 `specs/demo-v0.1/` 中冻结。
+
 ## 2. 分支职责
 
 ### `main`
