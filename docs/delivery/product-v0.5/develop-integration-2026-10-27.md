@@ -19,8 +19,8 @@
 
 ## Local candidate verification
 
-- Full Python regression: 169 tests passed before the additional stale-v0.4-service regression was added.
-- Acceptance-launcher tests after the addition: all 7 passed.
+- Full Python regression including the stale-v0.4-service regression: all 170 tests passed.
+- Acceptance-launcher tests: all 7 passed.
 - TypeScript and Vite production build passed; existing Three.js chunk-size warning remains.
 - npm dependency audit: zero vulnerabilities.
 - Real FastAPI + production Preview + Edge CI browser suite passed: authentication/restore/revocation, learning, precollected-evidence unlock, diagnosis/report errors and results, controlled Tutor delivery/fallback, desktop/tablet/mobile.
