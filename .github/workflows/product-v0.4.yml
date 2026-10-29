@@ -1,0 +1,59 @@
+name: Product v0.4
+
+on:
+  push:
+    branches: [main, develop, "phase/product-v0.4", "phase/product-v0.5-identity-persistence", "task/product-v0.5-m0-*"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  product-v0-4:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Python dependencies
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install -r requirements-release.txt
+
+      - name: Run Python regression
+        run: .venv/bin/python -B -m unittest discover -s tests -p "test_*.py" -v
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/training_web/package-lock.json
+
+      - name: Install web dependencies
+        working-directory: apps/training_web
+        run: npm ci
+
+      - name: Audit web dependencies
+        working-directory: apps/training_web
+        run: npm audit --audit-level=high
+
+      - name: Install Playwright Chromium
+        working-directory: apps/training_web
+        run: npx playwright install --with-deps chromium
+
+      - name: Run production acceptance service and browser smoke
+        env:
+          SIMTROUBLE_BROWSER_CHANNEL: bundled
+        run: .venv/bin/python -B tools/start_product_v04_acceptance.py --ci-smoke --no-browser
+
+      - name: Print service logs on failure
+        if: failure()
+        run: |
+          find var/acceptance/logs -maxdepth 1 -type f -print -exec cat {} \; 2>/dev/null || true

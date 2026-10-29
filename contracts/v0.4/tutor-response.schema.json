@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://simtrouble.local/contracts/v0.4/tutor-response.schema.json",
+  "title": "TutorResponseV04",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "intent", "message", "hint_level", "suggested_action"],
+  "properties": {
+    "contract_version": {"type": "string", "pattern": "^0\\.4\\.[0-9]+$"},
+    "intent": {"enum": ["question", "hint", "explain", "reflect"]},
+    "message": {"type": "string", "minLength": 1, "maxLength": 2000},
+    "hint_level": {"type": "integer", "minimum": 0, "maximum": 3},
+    "suggested_action": {
+      "enum": [
+        "observe_scene",
+        "inspect_evidence",
+        "submit_hypothesis",
+        "revise_hypothesis",
+        "submit_diagnosis",
+        "reflect",
+        null
+      ]
+    }
+  }
+}
+

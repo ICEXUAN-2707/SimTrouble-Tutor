@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://simtrouble.local/contracts/v0.4/evaluator-response.schema.json",
+  "title": "EvaluatorResponseV04",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "diagnosis_assessment",
+    "findings",
+    "dimension_findings",
+    "feedback_summary",
+    "next_learning_step"
+  ],
+  "properties": {
+    "contract_version": {"type": "string", "pattern": "^0\\.4\\.[0-9]+$"},
+    "diagnosis_assessment": {
+      "enum": ["correct", "partially_correct", "incorrect", "insufficient"]
+    },
+    "findings": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/finding"}
+    },
+    "dimension_findings": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/dimensionFinding"}
+    },
+    "feedback_summary": {"type": "string", "minLength": 1, "maxLength": 4000},
+    "next_learning_step": {"type": "string", "minLength": 1, "maxLength": 2000}
+  },
+  "$defs": {
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message", "cited_evidence_ids", "trace_indices"],
+      "properties": {
+        "code": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "message": {"type": "string", "minLength": 1, "maxLength": 2000},
+        "cited_evidence_ids": {"type": "array", "items": {"type": "string"}},
+        "trace_indices": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "integer", "minimum": 0}
+        }
+      }
+    },
+    "dimensionFinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dimension", "quality", "rationale", "trace_indices"],
+      "properties": {
+        "dimension": {"enum": ["hypothesis", "evidence", "efficiency", "updating", "safety"]},
+        "quality": {"enum": ["strong", "adequate", "weak", "not_observed"]},
+        "rationale": {"type": "string", "minLength": 1, "maxLength": 2000},
+        "trace_indices": {
+          "type": "array",
+          "items": {"type": "integer", "minimum": 0}
+        }
+      }
+    }
+  }
+}
+

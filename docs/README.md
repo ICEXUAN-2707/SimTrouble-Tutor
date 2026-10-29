@@ -4,12 +4,19 @@
 
 ## Canonical project documents
 
+当前产品交付入口：[v0.5 发布说明](releases/v0.5.md)，运行配置与恢复说明见
+[服务器部署指南](../deploy/README.md)。旧 Phase 文档中的状态与测试数量为历史记录。
+
 | File | Purpose | Status |
 |---|---|---|
 | `architecture-decisions.md` | Phase 0 架构决策与技术边界 | accepted; Freeze Pack 冲突时以上位基线为准 |
 | `reuse-analysis.md` | 外部项目技术尽调与可复用范围 | completed |
 | `license-check.md` | 外部依赖和参考项目许可检查 | completed |
 | `phase1-contract-audit.md` | Phase 1 Contract 交叉审计 | passed after CCP-001/CCP-002 |
+| `phase2-code-cross-audit.md` | Phase 2 到 Phase 3 的代码边界审计 | historical findings closed by Phase 3 |
+| `architecture-current.md` | 当前已经实现的模块、依赖方向和限制 | current as of Phase 3 |
+| `technical-stack-baseline-v0.4.md` | Product v0.4 本机验证技术栈的精确版本基线 | frozen on 2026-10-22 |
+| `architecture-target.md` | 模块化单体目标与可替换 Adapter 方向 | approved direction; implementation remains phase-gated |
 
 ## Source material
 

@@ -27,7 +27,10 @@
   "ground_truth": {"diagnosis": "object_pose_mismatch"},
   "optimal_path": [],
   "safety_rules": [],
-  "scoring_rules": {}
+  "scoring_rules": {
+    "version": "1.0",
+    "rules": []
+  }
 }
 ```
 
@@ -56,7 +59,8 @@
     "efficiency": 0,
     "updating": 0,
     "safety": 0
-  }
+  },
+  "trace": []
 }
 ```
 
@@ -169,7 +173,13 @@ POST   /sessions/{id}/action
 POST   /sessions/{id}/diagnosis
 
 GET    /sessions/{id}/report
+GET    /users/{user_id}/profile
 ```
+
+说明：
+- 前十条为 Freeze Pack v0.2 原始路由；
+- `GET /users/{user_id}/profile` 是已批准 CCP-001 的唯一 API 扩展；
+- `scoring_rules` 的版本化声明结构来自已批准 CCP-002，具体规则与权重仍属于 Phase 4。
 
 所有 API 变更：
 1. 先修改 Contract
