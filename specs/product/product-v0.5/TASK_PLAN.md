@@ -2,7 +2,7 @@
 
 > Base dependency: Product v0.4 must pass its Phase gate before this Phase may
 > enter `develop`.
-> Implementation status: M0 and M2 have merged into the Product v0.5 Phase; M1 local launcher implementation is complete. Browser acceptance is recorded in the M1 delivery note. Product v0.4 integration remains the prerequisite before this Phase can enter `develop`.
+> Current status (2026-10-29): M0/M1/M2 and the ordered v0.4/v0.5 integration are complete in develop (PR #28–#30). Release preparation adds deployment templates and verified local backup/recovery. Server deployment, HTTPS acceptance and encrypted off-site backups remain separate gates. Earlier per-task test counts below are historical delivery results; the release candidate passes 176 Python tests.
 
 ## T0 — Contract and threat boundary
 
@@ -43,7 +43,7 @@ Status: implementation complete.
 
 ## T4 — Verification and Phase gate
 
-Status: local gates complete; GitHub review/CI and base-Phase ordering remain.
+Status: Phase integration complete in develop. Release-to-main checks run on the current release PR; production hosting acceptance remains pending.
 
 - Contract/model parity tests.
 - Auth repository, expiry, rate-limit enumeration-resistance and CSRF tests.
@@ -80,4 +80,4 @@ See [M1_LOCAL_LAUNCHER.md](M1_LOCAL_LAUNCHER.md).
 - Clean up only the two services created by this launcher.
 - Keep the existing credential-gated DeepSeek smoke as a separate, explicit command.
 
-No dependency installation, production deployment, new API, frontend flow or database work. M0 and M2 are merged. Launcher preflight and startup succeeded; browser acceptance was completed by the user. Human UAT and existing deployment acceptance remain.
+No dependency installation, production deployment, new API, frontend flow or database work in M1. M0/M1/M2 are merged into develop. Launcher preflight and local browser acceptance passed; server deployment acceptance remains.

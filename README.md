@@ -1,5 +1,20 @@
 # SimTrouble Tutor
 
+## v0.5 当前可运行产品
+
+当前产品入口为 **Product v0.5**：ST-001 三维训练工作台、注册登录与用户隔离、
+证据/假设/诊断/五维报告、受约束 LLM Tutor、已完成训练 SQLite 存储及 Windows 启动器。
+下方 V0 的多案例目标和目标技术边界是路线图，不代表当前全部实现。
+
+- 本地启动：按下文安装依赖后运行 `START_SIMTROUBLE.cmd`，访问 `http://127.0.0.1:5174`。
+- 验证：176 项 Python 测试、生产构建和真实 API 浏览器流程通过；
+  2026-10-29 真实 DeepSeek 单次调用通过（非规则回退），凭据不随代码分发。
+- [v0.5 发布说明](docs/releases/v0.5.md) · [服务器部署与回滚](deploy/README.md) ·
+  [备份恢复演练记录](docs/delivery/product-v0.5/release-preparation-2026-10-28.md)。
+- 本次是源码发布到 main；服务器安装、外网 HTTPS 验收和加密异机备份仍待实施。
+- 训练中会话及 Tutor 对话在内存中；重启不能续训。只支持单 API worker，
+  无历史记录列表界面；已完成报告可由原用户通过原 Session ID 读取。
+
 SimTrouble Tutor 是面向智能设备操作与运维人员的仿真实训 AI Tutor。V0 聚焦工业机器人柔性搬运工作站，通过可控异常、诊断状态机、全过程 Trace、受约束的 AI 带教和可解释的五维能力评价，帮助学员形成基于证据的故障诊断能力。
 
 ## V0 产品范围
@@ -29,7 +44,7 @@ Simulation          Mock Adapter / later Gazebo or Isaac Adapter
 - Skill Engine 使用可解释规则，LLM 不直接决定最终分数；
 - Core 不依赖具体仿真 SDK，真实仿真只能通过冻结的 Adapter 边界接入。
 
-当前实际实现包含 Phase 1–3 的契约与 Core、隔离的初版 Demo、Product v0.4 学习闭环，以及已合入 v0.5 Phase 的身份与训练记录能力：
+当前实际实现包含 Phase 1–3 的契约与 Core、隔离的初版 Demo、Product v0.4 学习闭环，以及已合入 develop 的 v0.5 身份与训练记录能力：
 
 ```text
 contracts / data
@@ -48,7 +63,7 @@ Product v0.4
   ├─ apps/training_api/evaluation（Evaluator / Skill Engine / Report Builder）
   └─ contracts/v0.4（Tutor / Diagnosis / Evaluator / Report）
        ↑
-Product v0.5 Phase（M0/M2 已合入）
+Product v0.5（M0/M1/M2 已合入 develop）
   ├─ apps/training_api/auth（SQLite Account / Auth Session / CSRF）
   ├─ /api/v0.5（认证训练 Session 与所有权校验）
   └─ apps/training_web（登录 / 注册 / 退出）
@@ -69,8 +84,8 @@ Product v0.5 Phase（M0/M2 已合入）
 - Product v0.4 T2C：DeepSeek Responses 与 OpenAI-compatible Provider Registry、配置容错和 Case-aware Output Guard 已实现。
 - Product v0.4 T3：一次性 Diagnosis、定性 Evaluator、确定性五维评分和 Report 后端已实现。
 - Product v0.4 T4A/T4B：CAD、Evidence、Hypothesis、Tutor、Diagnosis、Report 已整合到中文响应式工作台；生产 Preview 浏览器 smoke、全量 Python 回归、依赖审计和真实 DeepSeek smoke 已通过。
-- Product v0.5 M0/M2：认证边界与用户已完成训练记录已合入 v0.5 Phase；Phase 仍须遵守 v0.4 → develop 的基线顺序。
-- Product v0.5 M1：Windows 本地启动器已实现；启动预检通过，用户完成浏览器本地验收。当前 Tutor 按配置运行规则回退，真实 LLM 问答仍需本地凭据进行独立验收。
+- Product v0.5 M0/M2：认证边界与用户已完成训练记录已按 v0.4 → v0.5 顺序合入 develop（PR #28–#30）。
+- Product v0.5 M1：Windows 本地启动器已实现并完成本地验收；Tutor 默认规则回退，启用密钥后可调用 LLM，2026-10-29 真实 DeepSeek smoke 通过。
 
 | 能力 | 当前事实 |
 |---|---|
@@ -81,9 +96,9 @@ Product v0.5 Phase（M0/M2 已合入）
 | ST-001 CAD 动画 | 已由 Scene JSON 驱动并通过 Product 浏览器烟测 |
 | Product Session API | 已实现 Session、Evidence、Hypothesis、Diagnosis、Report 和公开安全投影 |
 | 五维 Skill 评分 | T3 已实现；ST-001 Safety 因无可观测机会标记为 `not_assessed` |
-| LLM Tutor | T2B/T2C 代码闭环已实现；支持 DeepSeek、Qwen、Kimi 和 SiliconFlow 配置，真实 Key smoke 需在发布前人工执行 |
+| LLM Tutor | T2B/T2C 已实现；真实 DeepSeek smoke 通过；其他 Provider 具备适配器，不代表已逐一实测 |
 | Mock / 真实物理仿真 | 确定性 Three.js 动画已实现；物理仿真不在当前 MVP |
-| 数据库与账号体系 | v0.5 Phase 保存本地账号、认证会话和用户已完成训练记录；进行中的训练仍在内存中 |
+| 数据库与账号体系 | v0.5 保存账号、认证会话和已完成训练记录；进行中的训练仍在内存中 |
 
 当前权威基线与阶段规格：
 
@@ -115,7 +130,7 @@ SimTrouble_FreezePack_v0.2/   冻结的项目治理与技术边界
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements-release.txt
 .\.venv\Scripts\python.exe -B -m unittest discover -s tests -p 'test_*.py' -v
 Set-Location apps\training_web
 npm.cmd ci
@@ -137,7 +152,7 @@ npm.cmd audit
 
 ~~~powershell
 python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements-release.txt
 Set-Location apps\training_web
 npm.cmd ci
 Set-Location ..\..

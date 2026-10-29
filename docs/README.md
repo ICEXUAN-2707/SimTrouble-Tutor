@@ -4,6 +4,9 @@
 
 ## Canonical project documents
 
+当前产品交付入口：[v0.5 发布说明](releases/v0.5.md)，运行配置与恢复说明见
+[服务器部署指南](../deploy/README.md)。旧 Phase 文档中的状态与测试数量为历史记录。
+
 | File | Purpose | Status |
 |---|---|---|
 | `architecture-decisions.md` | Phase 0 架构决策与技术边界 | accepted; Freeze Pack 冲突时以上位基线为准 |

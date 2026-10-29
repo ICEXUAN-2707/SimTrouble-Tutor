@@ -1,0 +1,24 @@
+[Unit]
+Description=SimTrouble v0.5 API (single worker)
+After=network.target
+
+[Service]
+Type=simple
+User=simtrouble
+Group=simtrouble
+WorkingDirectory=/opt/simtrouble/current
+EnvironmentFile=/etc/simtrouble/api.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/simtrouble/current/.venv/bin/python -m uvicorn apps.training_api.main:app --host 127.0.0.1 --port 8001 --workers 1 --proxy-headers --forwarded-allow-ips=127.0.0.1 --no-access-log
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/simtrouble
+
+[Install]
+WantedBy=multi-user.target
